@@ -35,3 +35,5 @@ Dlaczego pnpm? Bo npm jest deprecated, wolny, rzuca warningami, a yarn był za d
 | `pnpm start:desktop` | Starts the Electron dev version |
 | `pnpm build:android` | Builds an Android release APK |
 | `pnpm start:android` | Starts the Android dev version with Metro |
+| `pnpm lint` | ESlint |
+| `pnpm test` | Unit tests with Jest |
