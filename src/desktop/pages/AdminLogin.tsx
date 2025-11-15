@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Input from '@core/components/Input';
-import Button from '@core/components/Button';
+import Input from '@platform/components/Input';
+import Button from '@platform/components/Button';
 // import useLoginAdmin from '@core/hooks/auth/useLoginAdmin'; // Will be implemented in T015
 
 const AdminLogin: React.FC = () => {

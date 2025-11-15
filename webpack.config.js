@@ -13,13 +13,13 @@ module.exports = (env) => {
     output: {
       path: path.resolve(__dirname, `build/${platform}`),
       filename: 'bundle.js',
+      publicPath: '/',
     },
     resolve: {
       extensions: ['.tsx', '.ts', '.js', '.jsx'],
       alias: {
         '@core': path.resolve(__dirname, 'src/core/'),
         '@platform': path.resolve(__dirname, `src/${platform}/`),
-        'react-dom/client': 'react-dom/index.js',
       },
     },
     module: {
@@ -61,5 +61,10 @@ module.exports = (env) => {
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
       }),
     ],
+    devServer: {
+      historyApiFallback: true,
+      port: 8080,
+      hot: true,
+    },
   };
 };
