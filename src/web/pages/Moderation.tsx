@@ -1,58 +1,80 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Button from '@core/components/Button';
-// import { useHeadteacherCompetitions } from '@core/hooks/headteacher/useCompetitions'; // Already exists
-// import { useTeamsInSchool } from '@core/hooks/headteacher/moderationHooks'; // Will be implemented in T041
+import Button from '@platform/components/Button';
+
+interface Team {
+  _id: string;
+  name: string;
+  competition: {
+    _id: string;
+    name: string;
+  };
+  members: Array<{
+    userId: string;
+    name: string;
+  }>;
+}
 
 const Moderation: React.FC = () => {
-  // const { competitions, loading: compsLoading, error: compsError } = useHeadteacherCompetitions();
-  // const { teams, loading: teamsLoading, error: teamsError } = useTeamsInSchool(); // Uncomment when T041 is done
-
-  const competitions = [ // Temporary data
-    { _id: 'comp1', name: 'Science Fair 2024' },
-    { _id: 'comp2', name: 'Global Coding Challenge' },
-  ];
-
-  const teams = [ // Temporary data
-    { _id: 'teamA', name: 'Team Alpha', competitionId: 'comp1' },
-    { _id: 'teamB', name: 'Team Beta', competitionId: 'comp1' },
-    { _id: 'teamX', name: 'Team X-Ray', competitionId: 'comp2' },
-  ];
+  const teams: Team[] = [];
 
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold mb-8">Headteacher Moderation Dashboard</h1>
-
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">Competitions Overview</h2>
-        {/* {compsLoading && <p>Loading competitions...</p>}
-        {compsError && <p className="text-red-500">Error: {compsError.message}</p>} */}
-        <ul>
-          {competitions.map((comp) => (
-            <li key={comp._id} className="mb-2">
-              <span className="font-semibold">{comp.name}</span>
-              <Link to={`/moderation/competitions/${comp._id}`}>
-                <Button className="ml-4">View Details</Button>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <div className="mb-6">
+        <Link to="/headteacher/dashboard">
+          <Button variant="secondary">← Back to Dashboard</Button>
+        </Link>
       </div>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">Teams Overview</h2>
-        {/* {teamsLoading && <p>Loading teams...</p>}
-        {teamsError && <p className="text-red-500">Error: {teamsError.message}</p>} */}
-        <ul>
-          {teams.map((team) => (
-            <li key={team._id} className="mb-2">
-              <span className="font-semibold">{team.name}</span> (Competition: {team.competitionId})
-              <Link to={`/moderation/teams/${team._id}`}>
-                <Button className="ml-4">Moderate Team</Button>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      <h1 className="text-3xl font-bold mb-8">Team Moderation</h1>
+
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Team Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Competition
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Members
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {teams.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                  No teams found.
+                </td>
+              </tr>
+            ) : (
+              teams.map((team) => (
+                <tr key={team._id}>
+                  <td className="px-6 py-4 whitespace-nowrap font-medium">
+                    {team.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {team.competition.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {team.members.length} members
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Link to={`/headteacher/teams/${team._id}`}>
+                      <Button className="text-sm">View Details</Button>
+                    </Link>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

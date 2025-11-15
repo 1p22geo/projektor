@@ -1,47 +1,54 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Input from '@core/components/Input';
-import Button from '@core/components/Button';
-// import useLoginAdmin from '@core/hooks/auth/useLoginAdmin'; // Will be implemented in T015
+import { useNavigate, Link } from 'react-router-dom';
+import { Container, Paper, Typography, Box, Alert } from '@mui/material';
+import Input from '@platform/components/Input';
+import Button from '@platform/components/Button';
+import useLoginAdmin from '@core/hooks/auth/useLoginAdmin';
 
 const AdminLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  // const { login, error, loading } = useLoginAdmin(); // Uncomment when T015 is done
+  const { login, error, loading } = useLoginAdmin();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder for actual login logic
-    console.log('Admin login attempt with password:', password);
-    // const success = await login(password); // Uncomment when T015 is done
-    // if (success) {
-    //   navigate('/admin/dashboard'); // Redirect to admin dashboard
-    // }
-    navigate('/admin/dashboard'); // Temporary redirect
+    const success = await login(password);
+    if (success) {
+      navigate('/admin/dashboard');
+    }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="px-8 py-6 mt-4 text-left bg-white shadow-lg">
-        <h3 className="text-2xl font-bold text-center">Admin Login</h3>
-        <form onSubmit={handleSubmit}>
-          <div className="mt-4">
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Admin Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex items-baseline justify-end">
-            <Button type="submit">Login</Button>
-          </div>
-          {/* {error && <p className="text-red-500 text-sm mt-2">{error}</p>} */}
-        </form>
-      </div>
-    </div>
+    <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
+      <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+        <Typography variant="h4" align="center" gutterBottom>
+          Admin Login
+        </Typography>
+        <Box component="form" onSubmit={handleSubmit}>
+          <Input
+            label="Password"
+            type="password"
+            placeholder="Admin Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2 }}>
+            <Link to="/login" style={{ textDecoration: 'none', color: '#1976d2' }}>
+              ← Back to Login
+            </Link>
+            <Button type="submit" disabled={loading}>
+              {loading ? 'Logging in...' : 'Login'}
+            </Button>
+          </Box>
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {error}
+            </Alert>
+          )}
+        </Box>
+      </Paper>
+    </Container>
   );
 };
 

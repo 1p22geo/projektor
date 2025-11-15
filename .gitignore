@@ -17,4 +17,4 @@ Thumbs.db
 static/dist/
 build/desktop/
 native/android/build/
-native/ios/build/
+native/ios/build/.env.local

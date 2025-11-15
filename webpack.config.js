@@ -1,9 +1,14 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
+require('dotenv').config({ path: '.env.local' });
 
 module.exports = (env) => {
   const platform = env.platform; // 'web' or 'desktop'
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  
   return {
-    mode: 'production',
+    mode: isDevelopment ? 'development' : 'production',
     entry: `./src/${platform}/index.tsx`,
     output: {
       path: path.resolve(__dirname, `build/${platform}`),
@@ -13,6 +18,7 @@ module.exports = (env) => {
       extensions: ['.tsx', '.ts', '.js', '.jsx'],
       alias: {
         '@core': path.resolve(__dirname, 'src/core/'),
+        '@platform': path.resolve(__dirname, `src/${platform}/`),
         'react-dom/client': 'react-dom/index.js',
       },
     },
@@ -45,5 +51,15 @@ module.exports = (env) => {
         },
       ],
     },
+    plugins: [
+      new HtmlWebpackPlugin({
+        template: './static/index.html',
+      }),
+      new webpack.DefinePlugin({
+        'process.env.API_URL': JSON.stringify(process.env.API_URL || 'http://localhost:3000/api'),
+        'process.env.SOCKET_URL': JSON.stringify(process.env.SOCKET_URL || 'http://localhost:3000'),
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+      }),
+    ],
   };
 };

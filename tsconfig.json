@@ -20,7 +20,8 @@
       "@core/*": ["src/core/*"],
       "@web/*": ["src/web/*"],
       "@desktop/*": ["src/desktop/*"],
-      "@native/*": ["src/native/*"]
+      "@native/*": ["src/native/*"],
+      "@platform/*": ["src/web/*"]
     }
   },
   "include": ["src", "jest.setup.ts"]

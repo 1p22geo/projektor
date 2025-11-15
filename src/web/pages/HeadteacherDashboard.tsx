@@ -1,30 +1,43 @@
 import React, { useState } from 'react';
-import Button from '@core/components/Button';
-import Input from '@core/components/Input';
-// import useGenerateTokens from '@core/hooks/headteacher/useGenerateTokens'; // Will be implemented in T022
+import { Link } from 'react-router-dom';
+import { 
+  Container, 
+  Typography, 
+  Grid, 
+  Card, 
+  CardContent, 
+  CardActions, 
+  Box,
+  Paper,
+  List,
+  ListItem,
+  ListItemText
+} from '@mui/material';
+import { EmojiEvents as TrophyIcon, Gavel as ModerationIcon } from '@mui/icons-material';
+import Button from '@platform/components/Button';
+import Input from '@platform/components/Input';
 
 const HeadteacherDashboard: React.FC = () => {
   const [tokenCount, setTokenCount] = useState(1);
   const [generatedTokens, setGeneratedTokens] = useState<string[]>([]);
-  // const { generateTokens, loading, error } = useGenerateTokens(); // Uncomment when T022 is done
 
   const handleGenerate = async () => {
-    // Placeholder for actual token generation logic
+    // TODO: Call API to generate tokens
     console.log(`Generating ${tokenCount} tokens...`);
-    // const tokens = await generateTokens(tokenCount); // Uncomment when T022 is done
-    // if (tokens) {
-    //   setGeneratedTokens(tokens);
-    // }
-    setGeneratedTokens(['TOKEN123', 'TOKEN456', 'TOKEN789']); // Temporary
+    setGeneratedTokens(['TOKEN123', 'TOKEN456', 'TOKEN789']);
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <h1 className="text-3xl font-bold mb-8">Headteacher Dashboard</h1>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Typography variant="h3" gutterBottom>
+        Headteacher Dashboard
+      </Typography>
 
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">Generate Student Registration Tokens</h2>
-        <div className="flex items-end space-x-4">
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h5" gutterBottom>
+          Generate Student Registration Tokens
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
           <Input
             label="Number of Tokens"
             type="number"
@@ -35,27 +48,61 @@ const HeadteacherDashboard: React.FC = () => {
             required
           />
           <Button onClick={handleGenerate}>Generate Tokens</Button>
-        </div>
+        </Box>
         {generatedTokens.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-lg font-medium">Generated Tokens:</h3>
-            <ul className="list-disc list-inside">
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6">Generated Tokens:</Typography>
+            <List>
               {generatedTokens.map((token, index) => (
-                <li key={index}>{token}</li>
+                <ListItem key={index}>
+                  <ListItemText primary={token} />
+                </ListItem>
               ))}
-            </ul>
-          </div>
+            </List>
+          </Box>
         )}
-        {/* {error && <p className="text-red-500 text-sm mt-2">{error}</p>} */}
-      </div>
+      </Paper>
 
-      {/* Add other headteacher functionalities here */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h2 className="text-xl font-semibold mb-4">Competition Management</h2>
-        <p className="text-gray-700 mb-4">Create and manage competitions for your school.</p>
-        <Button onClick={() => console.log('Navigate to competition management')}>Manage Competitions</Button>
-      </div>
-    </div>
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <TrophyIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
+                <Typography variant="h5">Competition Management</Typography>
+              </Box>
+              <Typography color="text.secondary">
+                Create and manage competitions for your school.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Link to="/headteacher/competitions" style={{ textDecoration: 'none' }}>
+                <Button>Manage Competitions</Button>
+              </Link>
+            </CardActions>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <ModerationIcon sx={{ fontSize: 40, mr: 2, color: 'primary.main' }} />
+                <Typography variant="h5">Team Moderation</Typography>
+              </Box>
+              <Typography color="text.secondary">
+                Monitor teams, view chats, and manage members.
+              </Typography>
+            </CardContent>
+            <CardActions>
+              <Link to="/headteacher/moderation" style={{ textDecoration: 'none' }}>
+                <Button>View Teams</Button>
+              </Link>
+            </CardActions>
+          </Card>
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 

@@ -1,3 +1,8 @@
+packages:
+  - .
+  - native
+
 onlyBuiltDependencies:
   - core-js
   - electron
+  - electron-winstaller

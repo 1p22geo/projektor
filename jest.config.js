@@ -1,26 +1,25 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'jsdom',
   moduleNameMapper: {
     '^@core/(.*)$': '<rootDir>/src/core/$1',
     '^@web/(.*)$': '<rootDir>/src/web/$1',
     '^@desktop/(.*)$': '<rootDir>/src/desktop/$1',
     '^@native/(.*)$': '<rootDir>/src/native/$1',
+    '^@platform/(.*)$': '<rootDir>/src/web/$1',
+    '^react-native$': 'react-native-web',
   },
   transform: {
-    '^.+\\.ts|tsx)$': 'ts-jest',
+    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
   },
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.json',
-    },
-  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(react-native|@react-native|@react-navigation|react-native-paper)/)',
+  ],
   testPathIgnorePatterns: [
     '/node_modules/',
     '/build/',
     '/dist/',
-    '/native/android/', // Ignore native Android project files
-    '/native/ios/',     // Ignore native iOS project files
+    '/native/android/',
+    '/native/ios/',
   ],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'], // Optional: for global setup
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };
