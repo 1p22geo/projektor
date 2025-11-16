@@ -1,28 +1,21 @@
-import useSWR, { mutate } from 'swr';
-import apiClient from '@core/api/apiClient';
+import useSWR from 'swr';
+import { fetcher } from '@core/hooks/useApi'; // Assuming fetcher is exported from useApi
 
 interface School {
-  _id: string;
+  id: string;
   name: string;
-  headteacher: string; // Assuming headteacher ID
+  headteacher_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useSchools = () => {
-  const { data, error } = useSWR<School[]>('/admin/schools', apiClient.get);
+  const { data, error, isLoading, mutate } = useSWR<School[]>('/api/admin/schools', fetcher);
+
   return {
     schools: data,
-    loading: !error && !data,
+    isLoading,
     error,
+    mutate,
   };
 };
-
-export const useCreateSchool = () => {
-  const createSchool = async (name: string) => {
-    const response = await apiClient.post('/admin/schools', { name });
-    mutate('/admin/schools'); // Revalidate schools list
-    return response.data;
-  };
-  return { createSchool };
-};
-
-// Add other school management hooks (e.g., useUpdateSchool, useDeleteSchool) as needed

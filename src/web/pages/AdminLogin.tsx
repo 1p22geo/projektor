@@ -21,11 +21,12 @@ const AdminLogin: React.FC = () => {
   return (
     <Container maxWidth="sm" sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center' }}>
       <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-        <Typography variant="h4" align="center" gutterBottom>
+        <Typography variant="h4" component="h1" align="center" gutterBottom>
           Admin Login
         </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Input
+            name="password"
             label="Password"
             type="password"
             placeholder="Admin Password"

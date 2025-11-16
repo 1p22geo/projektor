@@ -20,6 +20,8 @@ module.exports = {
     '/dist/',
     '/native/android/',
     '/native/ios/',
+    '/src/native/',
+    '/e2e/',
   ],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
 };

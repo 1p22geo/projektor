@@ -17,6 +17,6 @@ describe('Files component', () => {
 
   it('should render upload button', () => {
     render(<Files teamId="test-team" />);
-    expect(screen.getByText(/upload file/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /upload/i })).toBeInTheDocument();
   });
 });

@@ -1,25 +1,23 @@
 import { useState } from 'react';
-import apiClient from '@core/api/apiClient';
+import axiosInstance from '@core/api';
 
-const useRequestToJoinTeam = () => {
+export const useRequestToJoinTeam = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const requestToJoinTeam = async (teamId: string): Promise<boolean> => {
+  const requestToJoin = async (teamId: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.post(`/teams/${teamId}/join-requests`);
+      await axiosInstance.post(`/api/teams/${teamId}/join-requests`);
       setLoading(false);
       return true;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to send join request');
+      setError(err.response?.data?.detail || 'Failed to send join request');
       setLoading(false);
       return false;
     }
   };
 
-  return { requestToJoinTeam, loading, error };
+  return { requestToJoin, loading, error };
 };
-
-export default useRequestToJoinTeam;

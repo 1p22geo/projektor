@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import apiClient from '@core/api/apiClient';
-
-interface AdminLoginResponse {
-  token: string;
-  user: {
-    id: string;
-    role: string;
-    // Add other user properties as needed
-  };
-}
+import axiosInstance from '@core/api'; // Assuming axiosInstance is configured for API calls
 
 const useLoginAdmin = () => {
   const [loading, setLoading] = useState(false);
@@ -18,15 +9,14 @@ const useLoginAdmin = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post<AdminLoginResponse>('/auth/login/admin', { password });
+      const response = await axiosInstance.post('/api/auth/login/admin', { password });
       const { token, user } = response.data;
-      localStorage.setItem('authToken', token); // Store token
-      // Optionally store user info
-      // localStorage.setItem('adminUser', JSON.stringify(user));
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(user));
       setLoading(false);
       return true;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.detail || err.message || 'Login failed');
       setLoading(false);
       return false;
     }

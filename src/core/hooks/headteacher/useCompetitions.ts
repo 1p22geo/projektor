@@ -1,32 +1,26 @@
-import useSWR, { mutate } from 'swr';
-import apiClient from '@core/api/apiClient';
+import useSWR from 'swr';
+import { fetcher } from '@core/hooks/useApi';
 
 interface Competition {
-  _id: string;
+  id: string;
   name: string;
   description: string;
-  school: string;
-  isGlobal: boolean;
-  maxTeams: number;
-  maxMembersPerTeam: number;
+  school_id: string;
+  is_global: boolean;
+  max_teams: number;
+  max_members_per_team: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export const useHeadteacherCompetitions = () => {
-  const { data, error } = useSWR<Competition[]>('/headteacher/competitions', apiClient.get);
+export const useCompetitions = () => {
+  const { data, error, isLoading, mutate } = useSWR<Competition[]>('/api/headteacher/competitions', fetcher);
+
   return {
     competitions: data,
-    loading: !error && !data,
+    isLoading,
     error,
+    mutate,
   };
 };
-
-export const useCreateCompetition = () => {
-  const createCompetition = async (competitionData: Omit<Competition, '_id' | 'school'>) => {
-    const response = await apiClient.post('/headteacher/competitions', competitionData);
-    mutate('/headteacher/competitions'); // Revalidate competitions list
-    return response.data;
-  };
-  return { createCompetition };
-};
-
-// Add other competition management hooks (e.g., useUpdateCompetition, useDeleteCompetition) as needed

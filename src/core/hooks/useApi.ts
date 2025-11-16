@@ -1,26 +1,8 @@
-import useSWR, { SWRConfiguration } from 'swr';
-import apiClient from '../api/apiClient';
+import useSWR from 'swr';
+import axiosInstance from '../api'; // Import the configured axios instance
 
-interface UseApiOptions extends SWRConfiguration {
-  // Add any custom options for useApi if needed
-}
+export const fetcher = (url: string) => axiosInstance.get(url).then(res => res.data);
 
-function useApi<T = any>(url: string | null, options?: UseApiOptions) {
-  const { data, error, isValidating, mutate } = useSWR<T>(
-    url,
-    async (key) => {
-      const response = await apiClient.get(key);
-      return response.data;
-    },
-    options
-  );
-
-  return {
-    data,
-    error,
-    loading: isValidating,
-    mutate,
-  };
-}
-
-export default useApi;
+export const useApi = <T>(url: string) => {
+  return useSWR<T>(url, fetcher);
+};

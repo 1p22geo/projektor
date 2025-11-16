@@ -1,22 +1,26 @@
 import useSWR from 'swr';
-import apiClient from '@core/api/apiClient';
+import { fetcher } from '@core/hooks/useApi';
 
 interface Competition {
-  _id: string;
+  id: string;
   name: string;
   description: string;
-  isGlobal: boolean;
-  maxTeams: number;
-  maxMembersPerTeam: number;
+  school_id: string;
+  is_global: boolean;
+  max_teams: number;
+  max_members_per_team: number;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 }
 
-const useGetCompetitions = () => {
-  const { data, error } = useSWR<Competition[]>('/competitions', apiClient.get);
+export const useGetCompetitions = () => {
+  const { data, error, isLoading, mutate } = useSWR<Competition[]>('/api/competitions', fetcher);
+
   return {
     competitions: data,
-    loading: !error && !data,
+    isLoading,
     error,
+    mutate,
   };
 };
-
-export default useGetCompetitions;

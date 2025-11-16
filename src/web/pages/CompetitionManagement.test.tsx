@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import CompetitionManagement from './CompetitionManagement';
 
@@ -15,23 +15,29 @@ describe('CompetitionManagement', () => {
 
   it('should show create form when create button is clicked', () => {
     renderWithRouter(<CompetitionManagement />);
-    const createButton = screen.getByText(/create new competition/i);
+    const createButton = screen.getByRole('button', { name: /create competition/i });
     fireEvent.click(createButton);
+    
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toBeInTheDocument();
     expect(screen.getByLabelText(/competition name/i)).toBeInTheDocument();
-    expect(screen.getByText(/description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/max teams/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/max members per team/i)).toBeInTheDocument();
   });
 
-  it('should hide create form when cancel button is clicked', () => {
+  it('should hide create form when cancel button is clicked', async () => {
     renderWithRouter(<CompetitionManagement />);
-    const createButton = screen.getByText(/create new competition/i);
+    const createButton = screen.getByRole('button', { name: /create competition/i });
     fireEvent.click(createButton);
-    expect(screen.getByLabelText(/competition name/i)).toBeInTheDocument();
     
-    const cancelButton = screen.getByText(/cancel/i);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
     fireEvent.click(cancelButton);
-    expect(screen.queryByLabelText(/competition name/i)).not.toBeInTheDocument();
+    
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
   it('should display no competitions message when list is empty', () => {

@@ -9,10 +9,10 @@ const {
 const config = {
   projectRoot: __dirname,
   watchFolders: [
-    path.resolve(__dirname, '..'),
+    path.resolve(__dirname, '../'), // Watch the entire monorepo root
   ],
   transformer: {
-    babelTransformerPath: require.resolve('metro-react-native-babel-transformer'),
+    // Use default transformer, babel-preset handles TypeScript
   },
   resolver: {
     assetExts: assetExts.filter(ext => ext !== 'svg'),
@@ -23,11 +23,10 @@ const config = {
       '@desktop': path.resolve(__dirname, '../src/desktop'),
       '@native': path.resolve(__dirname, '../src/native'),
       '@platform': path.resolve(__dirname, '../src/native'),
-      '@babel': path.resolve(__dirname, 'node_modules/@babel'),
     },
     nodeModulesPaths: [
-      path.resolve(__dirname, '../node_modules'),
-      path.resolve(__dirname, 'node_modules'),
+      path.resolve(__dirname, '../node_modules'), // Root node_modules (hoisted)
+      path.resolve(__dirname, 'node_modules'),    // Native app's node_modules
     ],
     unstable_enableSymlinks: true,
   },

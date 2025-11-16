@@ -1,14 +1,5 @@
 import { useState } from 'react';
-import apiClient from '@core/api/apiClient';
-
-interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    role: string;
-    // Add other user properties as needed
-  };
-}
+import axiosInstance from '@core/api'; // Assuming axiosInstance is configured for API calls
 
 const useLogin = () => {
   const [loading, setLoading] = useState(false);
@@ -18,15 +9,14 @@ const useLogin = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/login', { email, password });
+      const response = await axiosInstance.post('/api/auth/login', { email, password });
       const { token, user } = response.data;
-      localStorage.setItem('authToken', token); // Store token
-      // Optionally store user info
-      // localStorage.setItem('currentUser', JSON.stringify(user));
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(user));
       setLoading(false);
       return true;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.response?.data?.detail || 'Login failed');
       setLoading(false);
       return false;
     }

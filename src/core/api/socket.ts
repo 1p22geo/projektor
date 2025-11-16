@@ -1,40 +1,35 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.SOCKET_URL || 'http://localhost:3000'; // Default to API URL for simplicity
+const SOCKET_URL = process.env.SOCKET_URL || 'http://localhost:8000'; // Default to backend port
 
 let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (!socket) {
     socket = io(SOCKET_URL, {
-      autoConnect: false, // We'll connect manually
-      // Add any other Socket.IO options here
+      auth: {
+        token: localStorage.getItem('authToken'), // Assuming token is stored in localStorage
+      },
     });
 
     socket.on('connect', () => {
-      console.log('Socket connected:', socket?.id);
+      console.log('Connected to WebSocket server');
     });
 
-    socket.on('disconnect', (reason) => {
-      console.log('Socket disconnected:', reason);
+    socket.on('disconnect', () => {
+      console.log('Disconnected from WebSocket server');
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('Socket connection error:', error);
+    socket.on('connect_error', (err) => {
+      console.error('WebSocket connection error:', err.message);
     });
   }
   return socket;
 };
 
-// You can also export functions to emit/listen to specific events
-export const connectSocket = () => {
-  if (socket && !socket.connected) {
-    socket.connect();
-  }
-};
-
 export const disconnectSocket = () => {
-  if (socket && socket.connected) {
+  if (socket) {
     socket.disconnect();
+    socket = null;
   }
 };

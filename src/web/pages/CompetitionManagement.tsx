@@ -1,15 +1,40 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { 
+  Container, 
+  Typography, 
+  Button as MuiButton, 
+  Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
+} from '@mui/material';
+import { ArrowBack as ArrowBackIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import Button from '@platform/components/Button';
 import Input from '@platform/components/Input';
+import apiClient from '@core/api/apiClient';
 
 interface Competition {
-  _id: string;
+  id: string;
   name: string;
   description: string;
-  isGlobal: boolean;
-  maxTeams: number;
-  maxMembersPerTeam: number;
+  is_global: boolean;
+  max_teams: number;
+  max_members_per_team: number;
 }
 
 const CompetitionManagement: React.FC = () => {
@@ -18,141 +43,221 @@ const CompetitionManagement: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    isGlobal: false,
-    maxTeams: 10,
-    maxMembersPerTeam: 4,
+    scope: 'school',
+    max_teams: 10,
+    max_members_per_team: 4,
   });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadCompetitions();
+  }, []);
+
+  const loadCompetitions = async () => {
+    try {
+      const response = await apiClient.get('/headteacher/competitions');
+      setCompetitions(response.data || []);
+    } catch (err: any) {
+      setError('Failed to load competitions');
+    }
+  };
 
   const handleCreateCompetition = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Call API to create competition
-    console.log('Creating competition:', formData);
-    setShowCreateForm(false);
-    setFormData({
-      name: '',
-      description: '',
-      isGlobal: false,
-      maxTeams: 10,
-      maxMembersPerTeam: 4,
-    });
+    setError('');
+    setSuccess('');
+
+    try {
+      await apiClient.post('/headteacher/competitions', {
+        ...formData,
+        is_global: formData.scope === 'global'
+      });
+      setSuccess('Competition created successfully');
+      setShowCreateForm(false);
+      setFormData({
+        name: '',
+        description: '',
+        scope: 'school',
+        max_teams: 10,
+        max_members_per_team: 4,
+      });
+      loadCompetitions();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create competition');
+    }
   };
 
   const handleDeleteCompetition = async (competitionId: string) => {
     if (window.confirm('Are you sure you want to delete this competition?')) {
-      // TODO: Call API to delete competition
-      console.log('Deleting competition:', competitionId);
-      setCompetitions(competitions.filter(c => c._id !== competitionId));
+      try {
+        await apiClient.delete(`/headteacher/competitions/${competitionId}`);
+        setSuccess('Competition deleted successfully');
+        loadCompetitions();
+      } catch (err: any) {
+        setError('Failed to delete competition');
+      }
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="mb-6">
-        <Link to="/headteacher/dashboard">
-          <Button variant="secondary">← Back to Dashboard</Button>
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Link to="/headteacher/dashboard" style={{ textDecoration: 'none' }}>
+          <MuiButton startIcon={<ArrowBackIcon />} variant="outlined">
+            Back to Dashboard
+          </MuiButton>
         </Link>
-      </div>
-      
-      <h1 className="text-3xl font-bold mb-8">Competition Management</h1>
-      
-      <div className="mb-6">
-        <Button onClick={() => setShowCreateForm(!showCreateForm)}>
-          {showCreateForm ? 'Cancel' : 'Create New Competition'}
+        <MuiButton 
+          data-testid="logout" 
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+          variant="outlined"
+        >
+          Logout
+        </MuiButton>
+      </Box>
+
+      <Typography variant="h4" component="h2" gutterBottom>
+        Competition Management
+      </Typography>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }} role="alert" onClose={() => setSuccess('')}>{success}</Alert>}
+
+      <Box sx={{ mb: 3 }}>
+        <Button onClick={() => setShowCreateForm(true)}>
+          Create Competition
         </Button>
-      </div>
+      </Box>
 
-      {showCreateForm && (
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-semibold mb-4">Create New Competition</h2>
-          <form onSubmit={handleCreateCompetition}>
-            <div className="mb-4">
-              <Input
-                label="Competition Name"
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <Input
-                label="Max Teams"
-                type="number"
-                value={formData.maxTeams}
-                onChange={(e) => setFormData({ ...formData, maxTeams: parseInt(e.target.value) })}
-                min="1"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <Input
-                label="Max Members Per Team"
-                type="number"
-                value={formData.maxMembersPerTeam}
-                onChange={(e) => setFormData({ ...formData, maxMembersPerTeam: parseInt(e.target.value) })}
-                min="1"
-                required
-              />
-            </div>
-            <div className="mb-4">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={formData.isGlobal}
-                  onChange={(e) => setFormData({ ...formData, isGlobal: e.target.checked })}
-                  className="mr-2"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Global Competition (visible to all schools)
-                </span>
-              </label>
-            </div>
-            <Button type="submit">Create Competition</Button>
-          </form>
-        </div>
-      )}
+      <Dialog open={showCreateForm} onClose={() => setShowCreateForm(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create New Competition</DialogTitle>
+        <DialogContent>
+          <Box component="form" onSubmit={handleCreateCompetition} id="create-competition-form" sx={{ mt: 2 }}>
+            <Input
+              name="name"
+              label="Competition Name"
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+            <TextField
+              fullWidth
+              name="description"
+              label="Description"
+              multiline
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              margin="normal"
+            />
+            <Input
+              name="maxTeams"
+              label="Max Teams"
+              type="number"
+              value={formData.max_teams}
+              onChange={(e) => setFormData({ ...formData, max_teams: parseInt(e.target.value) || 10 })}
+              inputProps={{ min: 1 }}
+              required
+            />
+            <Input
+              name="maxMembers"
+              label="Max Members Per Team"
+              type="number"
+              value={formData.max_members_per_team}
+              onChange={(e) => setFormData({ ...formData, max_members_per_team: parseInt(e.target.value) || 4 })}
+              inputProps={{ min: 1 }}
+              required
+            />
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Scope</InputLabel>
+              <Select
+                name="scope"
+                value={formData.scope}
+                onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
+                label="Scope"
+              >
+                <MenuItem value="school">School Only</MenuItem>
+                <MenuItem value="global">Global</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setShowCreateForm(false)}>Cancel</MuiButton>
+          <Button type="submit" form="create-competition-form">Create</Button>
+        </DialogActions>
+      </Dialog>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {competitions.length === 0 ? (
-          <div className="col-span-full text-center text-gray-500 py-8">
-            No competitions found. Create one to get started.
-          </div>
-        ) : (
-          competitions.map((competition) => (
-            <div key={competition._id} className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-xl font-semibold mb-2">{competition.name}</h3>
-              <p className="text-gray-600 mb-4">{competition.description}</p>
-              <div className="text-sm text-gray-500 mb-4">
-                <p>Max Teams: {competition.maxTeams}</p>
-                <p>Max Members: {competition.maxMembersPerTeam}</p>
-                <p>{competition.isGlobal ? '🌍 Global' : '🏫 School-wide'}</p>
-              </div>
-              <div className="space-x-2">
-                <Button
-                  variant="danger"
-                  onClick={() => handleDeleteCompetition(competition._id)}
-                  className="text-sm"
-                >
-                  Delete
-                </Button>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Description</TableCell>
+              <TableCell>Max Teams</TableCell>
+              <TableCell>Max Members</TableCell>
+              <TableCell>Scope</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {competitions.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center">
+                  No competitions found. Create one to get started.
+                </TableCell>
+              </TableRow>
+            ) : (
+              competitions.map((competition) => (
+                <TableRow key={competition.id} hover sx={{ cursor: 'pointer' }}>
+                  <TableCell onClick={() => navigate(`/headteacher/competitions/${competition.id}`)}>
+                    {competition.name}
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/headteacher/competitions/${competition.id}`)}>
+                    {competition.description}
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/headteacher/competitions/${competition.id}`)}>
+                    {competition.max_teams}
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/headteacher/competitions/${competition.id}`)}>
+                    {competition.max_members_per_team}
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/headteacher/competitions/${competition.id}`)}>
+                    {competition.is_global ? (
+                      <span data-testid="scope-global">Global</span>
+                    ) : (
+                      'School'
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <MuiButton 
+                      size="small" 
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCompetition(competition.id);
+                      }}
+                    >
+                      Delete
+                    </MuiButton>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Container>
   );
 };
 

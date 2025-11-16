@@ -1,0 +1,21 @@
+[project]
+name = "projektor-backend"
+version = "0.1.0"
+description = "Backend for Projektor"
+authors = [{ name = "1p22geo", email = "1p22geodecki@gmail.com" }]
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "pymongo",
+  "pytest",
+  "pytest-mock",
+  "httpx",
+  "python-dotenv",
+]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Container, 
   Typography, 
@@ -15,64 +15,121 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Alert
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import Button from '@platform/components/Button';
 import Input from '@platform/components/Input';
+import apiClient from '@core/api/apiClient';
 
 interface School {
-  _id: string;
+  id: string;
   name: string;
+  email: string;
+  headteacher_id?: string;
   headteacher?: {
-    _id: string;
+    id: string;
     name: string;
     email: string;
   };
 }
 
 const SchoolManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [schools, setSchools] = useState<School[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newSchoolName, setNewSchoolName] = useState('');
-  const [headteacherEmail, setHeadteacherEmail] = useState('');
-  const [headteacherName, setHeadteacherName] = useState('');
+  const [schoolEmail, setSchoolEmail] = useState('');
+  const [generatedPassword, setGeneratedPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    loadSchools();
+  }, []);
+
+  const loadSchools = async () => {
+    try {
+      const response = await apiClient.get('/admin/schools');
+      setSchools(response.data);
+    } catch (err: any) {
+      setError('Failed to load schools');
+    }
+  };
 
   const handleCreateSchool = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Call API to create school
-    console.log('Creating school:', { newSchoolName, headteacherEmail, headteacherName });
-    setShowCreateForm(false);
-    setNewSchoolName('');
-    setHeadteacherEmail('');
-    setHeadteacherName('');
+    setError('');
+    setSuccess('');
+    
+    try {
+      const response = await apiClient.post('/admin/schools', {
+        name: newSchoolName,
+        email: schoolEmail
+      });
+      
+      setGeneratedPassword(response.data.generated_password);
+      setSuccess('School created successfully');
+      setShowCreateForm(false);
+      setNewSchoolName('');
+      setSchoolEmail('');
+      loadSchools();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create school');
+    }
   };
 
   const handleDeleteSchool = async (schoolId: string) => {
     if (window.confirm('Are you sure you want to delete this school?')) {
-      // TODO: Call API to delete school
-      console.log('Deleting school:', schoolId);
-      setSchools(schools.filter(s => s._id !== schoolId));
+      try {
+        await apiClient.delete(`/admin/schools/${schoolId}`);
+        loadSchools();
+      } catch (err: any) {
+        setError('Failed to delete school');
+      }
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    navigate('/admin/login');
   };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 3 }}>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link to="/admin/dashboard" style={{ textDecoration: 'none' }}>
           <MuiButton startIcon={<ArrowBackIcon />} variant="outlined">
             Back to Dashboard
           </MuiButton>
         </Link>
+        <MuiButton 
+          data-testid="logout" 
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+          variant="outlined"
+        >
+          Logout
+        </MuiButton>
       </Box>
       
-      <Typography variant="h3" gutterBottom>
-        School Management
+      <Typography variant="h4" component="h2" gutterBottom>
+        Schools
       </Typography>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }} role="alert" onClose={() => setSuccess('')}>{success}</Alert>}
+      {generatedPassword && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Headteacher password: <strong data-testid="generated-password">{generatedPassword}</strong>
+        </Alert>
+      )}
       
       <Box sx={{ mb: 3 }}>
         <Button onClick={() => setShowCreateForm(true)}>
-          Create New School
+          Create School
         </Button>
       </Box>
 
@@ -81,6 +138,7 @@ const SchoolManagement: React.FC = () => {
         <DialogContent>
           <Box component="form" onSubmit={handleCreateSchool} id="create-school-form">
             <Input
+              name="name"
               label="School Name"
               type="text"
               value={newSchoolName}
@@ -88,24 +146,18 @@ const SchoolManagement: React.FC = () => {
               required
             />
             <Input
-              label="Headteacher Name"
-              type="text"
-              value={headteacherName}
-              onChange={(e) => setHeadteacherName(e.target.value)}
-              required
-            />
-            <Input
-              label="Headteacher Email"
+              name="email"
+              label="School Email"
               type="email"
-              value={headteacherEmail}
-              onChange={(e) => setHeadteacherEmail(e.target.value)}
+              value={schoolEmail}
+              onChange={(e) => setSchoolEmail(e.target.value)}
               required
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <MuiButton onClick={() => setShowCreateForm(false)}>Cancel</MuiButton>
-          <Button type="submit" form="create-school-form">Create School</Button>
+          <Button type="submit" form="create-school-form">Create</Button>
         </DialogActions>
       </Dialog>
 
@@ -114,6 +166,7 @@ const SchoolManagement: React.FC = () => {
           <TableHead>
             <TableRow>
               <TableCell>School Name</TableCell>
+              <TableCell>Email</TableCell>
               <TableCell>Headteacher</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -121,15 +174,20 @@ const SchoolManagement: React.FC = () => {
           <TableBody>
             {schools.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} align="center">
+                <TableCell colSpan={4} align="center">
                   No schools found. Create one to get started.
                 </TableCell>
               </TableRow>
             ) : (
               schools.map((school) => (
-                <TableRow key={school._id}>
-                  <TableCell>{school.name}</TableCell>
-                  <TableCell>
+                <TableRow key={school.id} sx={{ cursor: 'pointer' }} hover>
+                  <TableCell onClick={() => navigate(`/admin/schools/${school.id}`)}>
+                    {school.name}
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/admin/schools/${school.id}`)}>
+                    {school.email}
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/admin/schools/${school.id}`)}>
                     {school.headteacher ? (
                       <Box>
                         <Typography variant="body2" fontWeight="medium">
@@ -146,12 +204,15 @@ const SchoolManagement: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="danger"
-                      onClick={() => handleDeleteSchool(school._id)}
+                    <MuiButton 
+                      size="small" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteSchool(school.id);
+                      }}
                     >
                       Delete
-                    </Button>
+                    </MuiButton>
                   </TableCell>
                 </TableRow>
               ))

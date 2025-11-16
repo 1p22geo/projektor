@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Load environment variables from .env.local
-require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env.local', quiet: true });
 
 const { spawn } = require('child_process');
 const path = require('path');
@@ -34,7 +34,7 @@ if (androidHome) {
   const platformTools = path.join(androidHome, 'platform-tools');
   const localBin = path.join(__dirname, '..', 'node_modules', '.bin');
   env.PATH = `${localBin}${path.delimiter}${platformTools}${path.delimiter}${env.PATH}`;
-  
+
   // Create local.properties for gradle
   const fs = require('fs');
   const localPropertiesPath = path.join(__dirname, '..', 'native', 'android', 'local.properties');

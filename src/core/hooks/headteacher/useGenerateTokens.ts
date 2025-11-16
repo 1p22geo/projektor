@@ -1,29 +1,26 @@
 import { useState } from 'react';
-import apiClient from '@core/api/apiClient';
+import axiosInstance from '@core/api';
 
-interface GenerateTokensResponse {
-  tokens: string[];
-}
-
-const useGenerateTokens = () => {
+export const useGenerateTokens = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tokens, setTokens] = useState<string[]>([]);
 
   const generateTokens = async (count: number): Promise<string[] | null> => {
     setLoading(true);
     setError(null);
+    setTokens([]);
     try {
-      const response = await apiClient.post<GenerateTokensResponse>('/headteacher/tokens', { count });
+      const response = await axiosInstance.post('/api/headteacher/tokens', { count });
+      setTokens(response.data.tokens);
       setLoading(false);
       return response.data.tokens;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to generate tokens');
+      setError(err.response?.data?.detail || 'Failed to generate tokens');
       setLoading(false);
       return null;
     }
   };
 
-  return { generateTokens, loading, error };
+  return { generateTokens, tokens, loading, error };
 };
-
-export default useGenerateTokens;

@@ -1,15 +1,41 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Container, Typography, Grid, Card, CardContent, CardActions, Box } from '@mui/material';
-import { School as SchoolIcon, People as PeopleIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { Container, Typography, Grid, Card, CardContent, CardActions, Box, Button as MuiButton } from '@mui/material';
+import { School as SchoolIcon, People as PeopleIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import Button from '@platform/components/Button';
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    navigate('/admin/login');
+  };
+  
+  const handleNavigateToSchools = () => {
+    navigate('/admin/schools');
+  };
+  
+  const handleNavigateToUsers = () => {
+    navigate('/admin/users');
+  };
+  
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h3" gutterBottom>
-        Admin Dashboard
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h3" component="h1">
+          Admin Dashboard
+        </Typography>
+        <MuiButton 
+          data-testid="logout" 
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+          variant="outlined"
+        >
+          Logout
+        </MuiButton>
+      </Box>
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Card>
@@ -23,9 +49,7 @@ const AdminDashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Link to="/admin/schools" style={{ textDecoration: 'none' }}>
-                <Button>Manage Schools</Button>
-              </Link>
+              <Button onClick={handleNavigateToSchools}>Schools</Button>
             </CardActions>
           </Card>
         </Grid>
@@ -41,9 +65,7 @@ const AdminDashboard: React.FC = () => {
               </Typography>
             </CardContent>
             <CardActions>
-              <Link to="/admin/users" style={{ textDecoration: 'none' }}>
-                <Button>Manage Users</Button>
-              </Link>
+              <Button onClick={handleNavigateToUsers}>Users</Button>
             </CardActions>
           </Card>
         </Grid>

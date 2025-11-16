@@ -12,6 +12,7 @@ interface InputProps {
   min?: string | number;
   max?: string | number;
   id?: string;
+  name?: string;
   className?: string;
   style?: any;
 }
@@ -26,12 +27,14 @@ const Input: React.FC<InputProps> = ({
   min,
   max,
   id,
+  name,
   className,
   ...props 
 }) => {
   return (
     <TextField
       id={id}
+      name={name}
       label={label}
       type={type}
       value={value}

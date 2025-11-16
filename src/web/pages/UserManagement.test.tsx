@@ -10,7 +10,7 @@ const renderWithRouter = (component: React.ReactElement) => {
 describe('UserManagement', () => {
   it('should render user management page', () => {
     renderWithRouter(<UserManagement />);
-    expect(screen.getByText(/user management/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /users/i })).toBeInTheDocument();
   });
 
   it('should display table headers', () => {
@@ -18,7 +18,7 @@ describe('UserManagement', () => {
     expect(screen.getByText(/name/i)).toBeInTheDocument();
     expect(screen.getByText(/email/i)).toBeInTheDocument();
     expect(screen.getByText(/role/i)).toBeInTheDocument();
-    expect(screen.getByText(/school/i)).toBeInTheDocument();
+    expect(screen.getByText(/actions/i)).toBeInTheDocument();
   });
 
   it('should display no users message when users list is empty', () => {

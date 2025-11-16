@@ -66,7 +66,7 @@ describe('App pages', () => {
 
   it('should render competitions page', () => {
     render(<Competitions />, { wrapper: BrowserRouter });
-    expect(screen.getByText(/available competitions/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /competitions/i })).toBeInTheDocument();
   });
 });
 

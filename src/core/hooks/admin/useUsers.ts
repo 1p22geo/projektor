@@ -1,30 +1,23 @@
-import useSWR, { mutate } from 'swr';
-import apiClient from '@core/api/apiClient';
+import useSWR from 'swr';
+import { fetcher } from '@core/hooks/useApi';
 
 interface User {
-  _id: string;
+  id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'HEADTEACHER' | 'STUDENT';
-  school?: string; // Optional reference to school ID
+  role: string;
+  school_id?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useUsers = () => {
-  const { data, error } = useSWR<User[]>('/admin/users', apiClient.get);
+  const { data, error, isLoading, mutate } = useSWR<User[]>('/api/admin/users', fetcher);
+
   return {
     users: data,
-    loading: !error && !data,
+    isLoading,
     error,
+    mutate,
   };
 };
-
-export const useResetPassword = () => {
-  const resetPassword = async (userId: string) => {
-    const response = await apiClient.put(`/admin/users/${userId}/reset-password`);
-    // No revalidation needed for a password reset, but could update local user state if desired
-    return response.data;
-  };
-  return { resetPassword };
-};
-
-// Add other user management hooks (e.g., useDeleteUser) as needed

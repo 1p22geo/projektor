@@ -10,6 +10,7 @@ interface ButtonProps {
   className?: string;
   onPress?: () => void;
   style?: any;
+  form?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({ 
@@ -20,6 +21,8 @@ const Button: React.FC<ButtonProps> = ({
   type = 'button',
   disabled = false,
   className,
+  style,
+  form,
   ...props 
 }) => {
   const muiVariant = variant === 'primary' ? 'contained' : 
@@ -34,6 +37,8 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       disabled={disabled}
       className={className}
+      sx={style}
+      form={form}
       {...props}
     >
       {children}

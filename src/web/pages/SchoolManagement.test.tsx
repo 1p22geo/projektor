@@ -10,12 +10,12 @@ const renderWithRouter = (component: React.ReactElement) => {
 describe('SchoolManagement', () => {
   it('should render school management page', () => {
     renderWithRouter(<SchoolManagement />);
-    expect(screen.getByText(/school management/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /schools/i })).toBeInTheDocument();
   });
 
   it('should show create dialog when create button is clicked', () => {
     renderWithRouter(<SchoolManagement />);
-    const createButton = screen.getByText(/create new school/i);
+    const createButton = screen.getByText(/create school/i);
     fireEvent.click(createButton);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByLabelText(/school name/i)).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe('SchoolManagement', () => {
 
   it('should hide create dialog when cancel button is clicked', async () => {
     renderWithRouter(<SchoolManagement />);
-    const createButton = screen.getByText(/create new school/i);
+    const createButton = screen.getByText(/create school/i);
     fireEvent.click(createButton);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     

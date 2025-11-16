@@ -1,19 +1,26 @@
 import { useState } from 'react';
-import apiClient from '@core/api/apiClient';
+import axiosInstance from '@core/api';
 
-const useRegisterStudent = () => {
+interface RegisterStudentData {
+  token: string;
+  name: string;
+  email: string;
+  password: string;
+}
+
+export const useRegisterStudent = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const register = async (token: string, name: string, email: string, password: string): Promise<boolean> => {
+  const register = async (registerData: RegisterStudentData): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.post('/auth/register/student', { token, name, email, password });
+      await axiosInstance.post('/api/auth/register/student', registerData);
       setLoading(false);
       return true;
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.detail || 'Registration failed');
       setLoading(false);
       return false;
     }
@@ -21,5 +28,3 @@ const useRegisterStudent = () => {
 
   return { register, loading, error };
 };
-
-export default useRegisterStudent;

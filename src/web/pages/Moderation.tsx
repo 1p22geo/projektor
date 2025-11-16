@@ -1,82 +1,74 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import Button from '@platform/components/Button';
+import { Container, Typography, Box, CircularProgress, Alert, Grid, Card, CardContent, CardActions } from '@mui/material';
+import Button from '@core/components/Button';
+import Layout from '@core/components/Layout';
+// import { useTeamsForModeration } from '@core/hooks/headteacher/useTeamsForModeration'; // Will be implemented later
+import { useNavigate } from 'react-router-dom';
 
 interface Team {
-  _id: string;
+  id: string;
   name: string;
-  competition: {
-    _id: string;
-    name: string;
-  };
-  members: Array<{
-    userId: string;
-    name: string;
-  }>;
+  competition_id: string;
+  // Add other relevant team details for moderation
 }
 
 const Moderation: React.FC = () => {
-  const teams: Team[] = [];
+  const navigate = useNavigate();
+  // const { teams, isLoading, error } = useTeamsForModeration(); // Uncomment when useTeamsForModeration is implemented
+  const teams: Team[] = []; // Temporary placeholder
+  const isLoading = false; // Temporary placeholder
+  const error = null; // Temporary placeholder
+
+  const handleViewTeam = (teamId: string) => {
+    navigate(`/headteacher/moderation/${teamId}`);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-8">
-      <div className="mb-6">
-        <Link to="/headteacher/dashboard">
-          <Button variant="secondary">← Back to Dashboard</Button>
-        </Link>
-      </div>
+    <Layout title="Moderation Dashboard">
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Team Moderation
+        </Typography>
 
-      <h1 className="text-3xl font-bold mb-8">Team Moderation</h1>
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Team Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Competition
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Members
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {teams.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
-                  No teams found.
-                </td>
-              </tr>
-            ) : (
-              teams.map((team) => (
-                <tr key={team._id}>
-                  <td className="px-6 py-4 whitespace-nowrap font-medium">
+        {error && (
+          <Alert severity="error" sx={{ mt: 4 }}>
+            Failed to load teams: {error}
+          </Alert>
+        )}
+
+        {!isLoading && !error && teams.length === 0 && (
+          <Alert severity="info" sx={{ mt: 4 }}>
+            No teams to moderate at the moment.
+          </Alert>
+        )}
+
+        <Grid container spacing={3} sx={{ mt: 4 }}>
+          {teams.map((team) => (
+            <Grid item xs={12} md={6} key={team.id}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h5" component="h2" gutterBottom>
                     {team.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {team.competition.name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {team.members.length} members
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <Link to={`/headteacher/teams/${team._id}`}>
-                      <Button className="text-sm">View Details</Button>
-                    </Link>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Competition ID: {team.competition_id}
+                  </Typography>
+                </CardContent>
+                <CardActions>
+                  <Button size="small" onClick={() => handleViewTeam(team.id)}>View Team</Button>
+                </CardActions>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+    </Layout>
   );
 };
 

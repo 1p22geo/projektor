@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pymongo
+pytest
+pytest-mock
+httpx
+python-dotenv

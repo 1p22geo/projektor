@@ -15,12 +15,12 @@ const Login: React.FC = () => {
     e.preventDefault();
     const result = await login(email, password);
     if (result) {
-      if (result.user.role === 'HEADTEACHER') {
-        navigate('/headteacher/dashboard');
-      } else if (result.user.role === 'STUDENT') {
+      if (result.user.role === 'headteacher') {
+        navigate('/dashboard');
+      } else if (result.user.role === 'student') {
         navigate('/competitions');
       } else {
-        navigate('/competitions');
+        navigate('/dashboard');
       }
     }
   };
@@ -33,6 +33,7 @@ const Login: React.FC = () => {
         </Typography>
         <Box component="form" onSubmit={handleSubmit}>
           <Input
+            name="email"
             label="Email"
             type="email"
             placeholder="Your Email"
@@ -41,6 +42,7 @@ const Login: React.FC = () => {
             required
           />
           <Input
+            name="password"
             label="Password"
             type="password"
             placeholder="Your Password"
