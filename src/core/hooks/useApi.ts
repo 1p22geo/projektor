@@ -1,8 +1,3 @@
-import useSWR from 'swr';
-import axiosInstance from '../api'; // Import the configured axios instance
+import apiClient from '../api/apiClient';
 
-export const fetcher = (url: string) => axiosInstance.get(url).then(res => res.data);
-
-export const useApi = <T>(url: string) => {
-  return useSWR<T>(url, fetcher);
-};
+export const fetcher = (url: string) => apiClient.get(url).then(res => res.data);

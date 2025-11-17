@@ -15,7 +15,7 @@ interface Competition {
 }
 
 export const useCompetitions = () => {
-  const { data, error, isLoading, mutate } = useSWR<Competition[]>('/api/headteacher/competitions', fetcher);
+  const { data, error, isLoading, mutate } = useSWR<Competition[]>('/headteacher/competitions', fetcher);
 
   return {
     competitions: data,

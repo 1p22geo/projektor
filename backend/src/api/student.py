@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import (
     APIRouter,
     Body,
@@ -13,9 +14,9 @@ import jwt
 import os
 from datetime import datetime
 from bson import ObjectId
-from database import db
-from api.auth import SECRET_KEY, ALGORITHM, get_current_user
-from models import (
+from src.database import db
+from src.api.auth import SECRET_KEY, ALGORITHM, get_current_user
+from src.models import (
     User,
     Competition,
     Team,
@@ -85,11 +86,10 @@ def get_competition(
         team.files = []  # Don't expose files to non-members
         teams.append(team)
 
-    competition.teams = (
-        teams  # Assuming Competition model has a 'teams' field for this purpose
-    )
+    competition_dict = competition.dict()
+    competition_dict["teams"] = teams
 
-    return competition
+    return competition_dict
 
 
 # Teams
@@ -143,8 +143,8 @@ def create_team(
         members=[{"user_id": current_user.id, "name": current_user.name}],
         chat=[],
         files=[],
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
 
     result = teams_collection.insert_one(team.dict(by_alias=True))
@@ -216,8 +216,8 @@ def create_join_request(
         user_name=current_user.name,
         status="pending",
         approvals=[],
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
 
     result = join_requests_collection.insert_one(join_request.dict(by_alias=True))
@@ -313,8 +313,8 @@ def handle_join_request(
                     {"_id": team_id},
                     {
                         "$set": {
-                            "members": [m for m in team.members],
-                            "updated_at": datetime.utcnow(),
+                            "members": [m.dict() for m in team.members],
+                            "updated_at": datetime.now(timezone.utc),
                         }
                     },
                 )
@@ -322,7 +322,7 @@ def handle_join_request(
             # Mark request as approved
             join_requests_collection.update_one(
                 {"_id": request_id},
-                {"$set": {"status": "approved", "updated_at": datetime.utcnow()}},
+                {"$set": {"status": "approved", "updated_at": datetime.now(timezone.utc)}},
             )
 
             return {"message": "Join request approved and user added to team"}
@@ -330,7 +330,7 @@ def handle_join_request(
             # Update approvals
             join_requests_collection.update_one(
                 {"_id": request_id},
-                {"$set": {"approvals": approvals, "updated_at": datetime.utcnow()}},
+                {"$set": {"approvals": approvals, "updated_at": datetime.now(timezone.utc)}},
             )
 
             return {
@@ -343,7 +343,7 @@ def handle_join_request(
         # Mark request as rejected
         join_requests_collection.update_one(
             {"_id": request_id},
-            {"$set": {"status": "rejected", "updated_at": datetime.utcnow()}},
+            {"$set": {"status": "rejected", "updated_at": datetime.now(timezone.utc)}},
         )
 
         return {"message": "Join request rejected"}
@@ -385,7 +385,7 @@ def send_chat_message(
         user_id=current_user.id,
         user_name=current_user.name,
         message=msg.message,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
 
     teams_collection.update_one(
@@ -487,7 +487,7 @@ async def upload_file(
         filename=file.filename,
         url=f"/api/files/{file_id}",
         size=file_size,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
 
     teams_collection.update_one(

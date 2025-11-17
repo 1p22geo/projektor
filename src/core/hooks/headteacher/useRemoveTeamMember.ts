@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 // Assuming there's a useTeams hook for headteacher to revalidate the teams list
 // import { useTeamsForModeration } from './useTeamsForModeration'; 
 
@@ -12,7 +12,7 @@ export const useRemoveTeamMember = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.delete(`/api/headteacher/teams/${teamId}/members/${memberId}`);
+      await apiClient.delete(`/headteacher/teams/${teamId}/members/${memberId}`);
       // mutate(); // Revalidate the teams list
       setLoading(false);
       return true;

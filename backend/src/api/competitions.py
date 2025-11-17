@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Body, HTTPException
 from typing import List, Optional
-from services import competition_service
-from models import Competition, PydanticObjectId
-from datetime import datetime
+from src.services import competition_service
+from src.models import Competition, PydanticObjectId
+from datetime import datetime, timezone
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -37,8 +37,8 @@ def create_competition(competition_data: CompetitionCreateRequest = Body(...)):
         max_teams=competition_data.max_teams,
         max_members_per_team=competition_data.max_members_per_team,
         created_by=str(competition_data.created_by),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     return competition_service.create_competition(new_competition)
 

@@ -12,7 +12,7 @@ interface User {
 }
 
 export const useUsers = () => {
-  const { data, error, isLoading, mutate } = useSWR<User[]>('/api/admin/users', fetcher);
+  const { data, error, isLoading, mutate } = useSWR<User[]>('/admin/users', fetcher);
 
   return {
     users: data,

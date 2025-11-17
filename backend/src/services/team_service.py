@@ -1,5 +1,5 @@
-from database import db
-from models import Team, PydanticObjectId
+from src.database import db
+from src.models import Team, PydanticObjectId
 from typing import List, Optional
 from datetime import datetime, timezone
 

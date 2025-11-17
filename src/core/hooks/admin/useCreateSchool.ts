@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useSchools } from './useSchools'; // To revalidate the schools list
 
 interface CreateSchoolData {
@@ -16,7 +16,7 @@ export const useCreateSchool = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.post('/api/admin/schools', schoolData);
+      await apiClient.post('/admin/schools', schoolData);
       mutate(); // Revalidate the schools list
       setLoading(false);
       return true;

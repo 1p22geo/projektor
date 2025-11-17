@@ -13,6 +13,7 @@
     "run:android": "node scripts/run-android.js \"cd native && npm run android\"",
     "backend:install": "cd backend && uv sync",
     "backend:dev": "cd backend && export PYTHONPATH=$PWD/src && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
+    "backend:test:e2e": "cd backend && export PYTHONPATH=$PWD/src && export TEST_MODE=true && uv run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000",
     "backend:start": "cd backend && PYTHONPATH=src uv run uvicorn main:app --host 0.0.0.0 --port 8000",
     "backend:test": "cd backend && export PYTHONPATH=$PWD/src && uv run pytest",
     "backend:lint": "cd backend && uv run ruff check .",

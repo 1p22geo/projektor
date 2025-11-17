@@ -3,10 +3,10 @@ from pydantic import BaseModel, EmailStr
 import os
 import secrets
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import jwt
-from database import db
-from models import User, PydanticObjectId, RegistrationToken, School
+from src.database import db
+from src.models import User, PydanticObjectId, RegistrationToken, School
 
 router = APIRouter()
 
@@ -42,7 +42,7 @@ class TokenResponse(BaseModel):
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -120,8 +120,8 @@ def register_student(data: RegisterStudentRequest = Body(...)):
         password=hashed_password,
         role="student",
         school_id=token_doc.school_id,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
     
     result = users_collection.insert_one(user.dict(by_alias=True))
@@ -130,7 +130,7 @@ def register_student(data: RegisterStudentRequest = Body(...)):
     # Mark token as used
     registration_tokens_collection.update_one(
         {"_id": token_doc.id},
-        {"$set": {"used": True, "used_by": user.id, "used_at": datetime.utcnow()}}
+        {"$set": {"used": True, "used_by": user.id, "used_at": datetime.now(timezone.utc)}}
     )
     
     return {"message": "Registration successful"}
@@ -149,7 +149,7 @@ def get_current_user(authorization: str = Header(None)):
             raise HTTPException(status_code=401, detail="Invalid token payload")
         
         if user_role == "admin":
-            return {"id": "admin", "role": "admin", "email": "admin@projektor.local"}
+            return User(id=None, name="Admin", email=None, password=None, role="admin")
         
         users_collection = db.get_collection("users")
         user_data = users_collection.find_one({"_id": PydanticObjectId(user_id)})

@@ -3,22 +3,25 @@ from pydantic import BaseModel, EmailStr
 from typing import List, Optional
 import hashlib
 import secrets
-from datetime import datetime
-from database import db
-from models import User, School, PydanticObjectId, RegistrationToken
-from api.auth import get_current_user, hash_password
+from datetime import datetime, timezone
+from src.database import db
+from src.models import User, School, PydanticObjectId, RegistrationToken
+from src.api.auth import get_current_user, hash_password
 
 router = APIRouter()
+
 
 def verify_admin_token(current_user: User = Depends(get_current_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     return current_user
 
+
 # School models
 class SchoolCreate(BaseModel):
     name: str
     email: EmailStr
+
 
 class SchoolResponse(BaseModel):
     id: PydanticObjectId
@@ -28,39 +31,73 @@ class SchoolResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     headteacher: Optional[User] = None
+    generated_password: Optional[str] = None  # Only present when creating a school
+
 
 # Schools
 @router.get("/schools", response_model=List[SchoolResponse])
 def list_schools(current_user: User = Depends(verify_admin_token)):
     schools_collection = db.get_collection("schools")
+    users_collection = db.get_collection(
+        "users"
+    )  # Need this to fetch headteacher details
     schools_data = list(schools_collection.find())
-    
-    schools = []
+
+    schools_response_list = []
     for school_data in schools_data:
+        # Explicitly convert ObjectId to string for _id and headteacher_id
+        school_data["_id"] = str(school_data["_id"])
+        school_data["headteacher_id"] = str(school_data["headteacher_id"])
+        # Provide a default value for email if it's missing
+        school_data.setdefault("email", "default@example.com")
         school = School(**school_data)
-        schools.append(school)
-    return schools
+
+        headteacher = None
+        if school.headteacher_id:
+            headteacher_data = users_collection.find_one(
+                {"_id": PydanticObjectId(school.headteacher_id)}
+            )
+            if headteacher_data:
+                headteacher = User(**headteacher_data)
+                headteacher.password = None  # Don't expose password hash
+
+        schools_response_list.append(
+            SchoolResponse(
+                id=school.id,
+                name=school.name,
+                email=school.email,
+                headteacher_id=school.headteacher_id,
+                created_at=school.created_at,
+                updated_at=school.updated_at,
+                headteacher=headteacher,
+            )
+        )
+    return schools_response_list
+
 
 @router.post("/schools", response_model=SchoolResponse)
-def create_school(school_data: SchoolCreate = Body(...), current_user: User = Depends(verify_admin_token)):
+def create_school(
+    school_data: SchoolCreate = Body(...),
+    current_user: User = Depends(verify_admin_token),
+):
     users_collection = db.get_collection("users")
     schools_collection = db.get_collection("schools")
-    
+
     # Check if school email already exists
     existing_school = schools_collection.find_one({"email": school_data.email})
     if existing_school:
         raise HTTPException(status_code=400, detail="School email already exists")
-    
+
     # Auto-generate headteacher credentials
     headteacher_name = f"Headteacher of {school_data.name}"
     headteacher_email = school_data.email
     headteacher_password = secrets.token_urlsafe(12)
-    
+
     # Check if headteacher email already exists
     existing_user = users_collection.find_one({"email": headteacher_email})
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    
+
     # Create headteacher account
     hashed_password = hash_password(headteacher_password)
     headteacher = User(
@@ -68,178 +105,324 @@ def create_school(school_data: SchoolCreate = Body(...), current_user: User = De
         email=headteacher_email,
         password=hashed_password,
         role="headteacher",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
-    
+
     headteacher_result = users_collection.insert_one(headteacher.dict(by_alias=True))
     headteacher.id = headteacher_result.inserted_id
-    
-    # Create school
+
+    # Create school (don't set id, let MongoDB generate it)
     school = School(
         name=school_data.name,
         email=school_data.email,
-        headteacher_id=headteacher.id,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        headteacher_id=str(headteacher.id),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
-    
-    result = schools_collection.insert_one(school.dict(by_alias=True))
+
+    # Convert to dict, excluding the autogenerated _id
+    school_dict = school.dict(by_alias=True, exclude_unset=True)
+    if "_id" in school_dict:
+        del school_dict["_id"]  # Remove it to let MongoDB auto-generate
+
+    result = schools_collection.insert_one(school_dict)
     school.id = result.inserted_id
-    
+
     # Update headteacher with school_id
     users_collection.update_one(
-        {"_id": headteacher.id},
-        {"$set": {"school_id": school.id}}
+        {"_id": headteacher.id}, {"$set": {"school_id": school.id}}
     )
-    
-    school_response = school.dict(by_alias=True)
-    school_response["generated_password"] = headteacher_password
-    school_response["headteacher"] = headteacher.dict(by_alias=True)
-    school_response["headteacher"].pop("password", None)
-    
+
+    school_response = {
+        "id": str(school.id),
+        "name": school.name,
+        "email": school_data.email,
+        "headteacher_id": str(headteacher.id),
+        "created_at": school.created_at,
+        "updated_at": school.updated_at,
+        "generated_password": headteacher_password,
+        "headteacher": {
+            "id": str(headteacher.id),
+            "name": headteacher.name,
+            "email": headteacher.email,
+            "role": headteacher.role,
+            "school_id": str(headteacher.school_id) if headteacher.school_id else None,
+            "created_at": headteacher.created_at,
+            "updated_at": headteacher.updated_at,
+        },
+    }
+
     return school_response
 
+
 @router.get("/schools/{school_id}", response_model=SchoolResponse)
-def get_school(school_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)):
+def get_school(
+    school_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)
+):
     schools_collection = db.get_collection("schools")
     users_collection = db.get_collection("users")
-    
-    school_data = schools_collection.find_one({"_id": school_id})
+
+    import logging
+
+    logger = logging.getLogger(__name__)
+    logger.info(f"Getting school with ID: {school_id}, type: {type(school_id)}")
+
+    try:
+        school_data = schools_collection.find_one({"_id": school_id})
+        logger.info(f"Query result: {school_data is not None}")
+    except Exception as e:
+        logger.error(f"Error querying database: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Invalid school ID: {str(e)}")
+
     if not school_data:
+        # Log all schools for debugging
+        all_schools = list(schools_collection.find())
+        logger.warning(f"School not found. Total schools in DB: {len(all_schools)}")
+        if all_schools:
+            logger.warning(
+                f"Sample school IDs: {[str(s['_id']) for s in all_schools[:3]]}"
+            )
         raise HTTPException(status_code=404, detail="School not found")
-    
+
+    # Explicitly convert ObjectId to string for _id and headteacher_id
+    school_data["_id"] = str(school_data["_id"])
+    school_data["headteacher_id"] = str(school_data["headteacher_id"])
+    # Provide a default value for email if it's missing
+    school_data.setdefault("email", "default@example.com")
     school = School(**school_data)
-    
-    # Get headteacher info
+
+    headteacher = None
     if school.headteacher_id:
-        headteacher_data = users_collection.find_one({"_id": school.headteacher_id})
+        headteacher_data = users_collection.find_one(
+            {"_id": PydanticObjectId(school.headteacher_id)}
+        )
         if headteacher_data:
             headteacher = User(**headteacher_data)
-            school.headteacher = headteacher
-    
-    return school
+            headteacher.password = None  # Don't expose password hash
+
+    return SchoolResponse(
+        id=school.id,
+        name=school.name,
+        email=school.email,
+        headteacher_id=school.headteacher_id,
+        created_at=school.created_at,
+        updated_at=school.updated_at,
+        headteacher=headteacher,
+    )
+
 
 @router.put("/schools/{school_id}", response_model=SchoolResponse)
-def update_school(school_id: PydanticObjectId, data: dict = Body(...), current_user: User = Depends(verify_admin_token)):
-    schools_collection = db.get_collection("schools")
-    
-    school_data = schools_collection.find_one({"_id": school_id})
-    if not school_data:
-        raise HTTPException(status_code=404, detail="School not found")
-    
-    update_data = {k: v for k, v in data.items() if k in ["name", "email"]}
-    if update_data:
-        update_data["updated_at"] = datetime.utcnow()
-        schools_collection.update_one(
-            {"_id": school_id},
-            {"$set": update_data}
-        )
-    
-    updated_school_data = schools_collection.find_one({"_id": school_id})
-    return School(**updated_school_data)
-
-@router.delete("/schools/{school_id}")
-def delete_school(school_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)):
+def update_school(
+    school_id: PydanticObjectId,
+    data: dict = Body(...),
+    current_user: User = Depends(verify_admin_token),
+):
     schools_collection = db.get_collection("schools")
     users_collection = db.get_collection("users")
-    
+
     school_data = schools_collection.find_one({"_id": school_id})
     if not school_data:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
+    update_data = {k: v for k, v in data.items() if k in ["name", "email"]}
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc)
+        schools_collection.update_one({"_id": school_id}, {"$set": update_data})
+
+    updated_school_data = schools_collection.find_one({"_id": school_id})
+    # Explicitly convert ObjectId to string for _id and headteacher_id
+    updated_school_data["_id"] = str(updated_school_data["_id"])
+    updated_school_data["headteacher_id"] = str(updated_school_data["headteacher_id"])
+    # Provide a default value for email if it's missing
+    updated_school_data.setdefault("email", "default@example.com")
+    updated_school = School(**updated_school_data)
+
+    headteacher = None
+    if updated_school.headteacher_id:
+        headteacher_data = users_collection.find_one(
+            {"_id": PydanticObjectId(updated_school.headteacher_id)}
+        )
+        if headteacher_data:
+            headteacher = User(**headteacher_data)
+            headteacher.password = None  # Don't expose password hash
+
+    return SchoolResponse(
+        id=updated_school.id,
+        name=updated_school.name,
+        email=updated_school.email,
+        headteacher_id=updated_school.headteacher_id,
+        created_at=updated_school.created_at,
+        updated_at=updated_school.updated_at,
+        headteacher=headteacher,
+    )
+
+
+@router.delete("/schools/{school_id}")
+def delete_school(
+    school_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)
+):
+    schools_collection = db.get_collection("schools")
+    users_collection = db.get_collection("users")
+
+    school_data = schools_collection.find_one({"_id": school_id})
+    if not school_data:
+        raise HTTPException(status_code=404, detail="School not found")
+
     school = School(**school_data)
-    
+
     # Delete associated headteacher
     if school.headteacher_id:
         users_collection.delete_one({"_id": school.headteacher_id})
-    
+
     # Delete school
     result = schools_collection.delete_one({"_id": school_id})
-    
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="School not found")
-    
+
     return {"message": "School deleted successfully"}
+
 
 # Users
 @router.get("/users", response_model=List[User])
 def list_users(current_user: User = Depends(verify_admin_token)):
     users_collection = db.get_collection("users")
     users_data = list(users_collection.find())
-    
+
     users = []
     for user_data in users_data:
         user = User(**user_data)
-        user.password = "" # Don't expose password hash
+        user.password = ""  # Don't expose password hash
         users.append(user)
     return users
 
+
 @router.put("/users/{user_id}/reset-password")
-def reset_user_password(user_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)):
+def reset_user_password(
+    user_id: str,
+    current_user: User = Depends(verify_admin_token),  # Accept as string
+):
     users_collection = db.get_collection("users")
-    
+
+    # Try to find user by string ID first, then by ObjectId
     user_data = users_collection.find_one({"_id": user_id})
     if not user_data:
+        # Try as ObjectId
+        try:
+            from bson import ObjectId
+
+            user_data = users_collection.find_one({"_id": ObjectId(user_id)})
+        except:
+            pass
+
+    if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Generate new password
     new_password = secrets.token_urlsafe(12)
     hashed_password = hash_password(new_password)
-    
+
+    # Update using the same ID format that was found
     users_collection.update_one(
-        {"_id": user_id},
-        {"$set": {"password": hashed_password, "password_reset_at": datetime.utcnow()}}
+        {"_id": user_data["_id"]},
+        {
+            "$set": {
+                "password": hashed_password,
+                "password_reset_at": datetime.now(timezone.utc),
+            }
+        },
     )
-    
+
     return {"message": "Password reset successful", "new_password": new_password}
 
+
 @router.delete("/users/{user_id}")
-def delete_user(user_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)):
+def delete_user(
+    user_id: str, current_user: User = Depends(verify_admin_token)  # Accept as string
+):
     users_collection = db.get_collection("users")
     
-    result = users_collection.delete_one({"_id": user_id})
+    # Try to find user by string ID first, then by ObjectId
+    user_data = users_collection.find_one({"_id": user_id})
+    if not user_data:
+        # Try as ObjectId
+        try:
+            from bson import ObjectId
+            user_data = users_collection.find_one({"_id": ObjectId(user_id)})
+        except:
+            pass
     
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Delete using the same ID format that was found
+    result = users_collection.delete_one({"_id": user_data["_id"]})
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return {"message": "User deleted successfully"}
 
+
 @router.get("/users/{user_id}/export")
-def export_user_data(user_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)):
+def export_user_data(
+    user_id: str, current_user: User = Depends(verify_admin_token)  # Accept as string
+):
     users_collection = db.get_collection("users")
-    
+
+    # Try to find user by string ID first, then by ObjectId
     user_data = users_collection.find_one({"_id": user_id})
     if not user_data:
-        raise HTTPException(status_code=404, detail="User not found")
+        # Try as ObjectId
+        try:
+            from bson import ObjectId
+            user_data = users_collection.find_one({"_id": ObjectId(user_id)})
+        except:
+            pass
     
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
     # Remove password hash before exporting
     user_data.pop("password", None)
-    
+
     # In a real application, you might also fetch and include other user-related data
     # (e.g., teams they are part of, messages, files)
-    
+
     return user_data
 
+
 @router.delete("/users/{user_id}/data")
-def delete_user_data(user_id: PydanticObjectId, current_user: User = Depends(verify_admin_token)):
+def delete_user_data(
+    user_id: str, current_user: User = Depends(verify_admin_token)  # Accept as string
+):
     users_collection = db.get_collection("users")
     teams_collection = db.get_collection("teams")
-    
+
+    # Try to find user by string ID first, then by ObjectId
     user_data = users_collection.find_one({"_id": user_id})
     if not user_data:
+        # Try as ObjectId
+        try:
+            from bson import ObjectId
+            user_data = users_collection.find_one({"_id": ObjectId(user_id)})
+        except:
+            pass
+    
+    if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Delete user account
-    users_collection.delete_one({"_id": user_id})
-    
-    # Remove user from any teams they are a member of
+
+    # Delete user account using the actual ID from database
+    users_collection.delete_one({"_id": user_data["_id"]})
+
+    # Remove user from any teams they are a member of (try both string and ObjectId)
     teams_collection.update_many(
-        {"members.user_id": user_id},
-        {"$pull": {"members": {"user_id": user_id}}}
+        {"members.user_id": str(user_data["_id"])}, 
+        {"$pull": {"members": {"user_id": str(user_data["_id"])}}}
     )
-    
+
     # In a real application, you would also delete chat messages, files, join requests, etc.
     # For now, we'll just delete the user and remove them from teams.
-    
+
     return {"message": "User data deleted successfully"}

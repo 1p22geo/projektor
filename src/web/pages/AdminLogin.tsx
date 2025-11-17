@@ -12,6 +12,7 @@ const AdminLogin: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Logging in with password:', password);
     const success = await login(password);
     if (success) {
       navigate('/admin/dashboard');

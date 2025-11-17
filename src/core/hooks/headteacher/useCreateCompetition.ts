@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useCompetitions } from './useCompetitions'; // To revalidate the competitions list
 
 interface CreateCompetitionData {
@@ -21,7 +21,7 @@ export const useCreateCompetition = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.post('/api/headteacher/competitions', competitionData);
+      await apiClient.post('/headteacher/competitions', competitionData);
       mutate(); // Revalidate the competitions list
       setLoading(false);
       return true;

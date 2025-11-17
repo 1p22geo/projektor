@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 
 interface CreateTeamData {
   name: string;
@@ -14,7 +14,7 @@ export const useCreateTeam = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.post(`/api/competitions/${competitionId}/teams`, { name: teamName });
+      const response = await apiClient.post(`/competitions/${competitionId}/teams`, { name: teamName });
       // Assuming the API returns the created team data, you might want to do something with it
       console.log('Team created:', response.data);
       setLoading(false);

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useCompetitions } from './useCompetitions'; // To revalidate the competitions list
 
 export const useDeleteCompetition = () => {
@@ -11,7 +11,7 @@ export const useDeleteCompetition = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.delete(`/api/headteacher/competitions/${competitionId}`);
+      await apiClient.delete(`/headteacher/competitions/${competitionId}`);
       mutate(); // Revalidate the competitions list
       setLoading(false);
       return true;

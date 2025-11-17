@@ -10,7 +10,7 @@ interface School {
 }
 
 export const useSchools = () => {
-  const { data, error, isLoading, mutate } = useSWR<School[]>('/api/admin/schools', fetcher);
+  const { data, error, isLoading, mutate } = useSWR<School[]>('/admin/schools', fetcher);
 
   return {
     schools: data,

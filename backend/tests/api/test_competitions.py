@@ -3,7 +3,7 @@ from main import app
 import pytest
 from unittest.mock import MagicMock
 from models import Competition, PydanticObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 
 client = TestClient(app)
@@ -36,8 +36,8 @@ def sample_competition_data():
         "max_teams": 10,
         "max_members_per_team": 5,
         "created_by": str(PydanticObjectId()),
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 def test_create_competition(mocker, sample_competition_data):

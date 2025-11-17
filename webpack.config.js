@@ -56,7 +56,7 @@ module.exports = (env) => {
         template: './static/index.html',
       }),
       new webpack.DefinePlugin({
-        'process.env.API_URL': JSON.stringify(process.env.API_URL || 'http://localhost:8000'),
+        'process.env.API_URL': JSON.stringify(process.env.API_URL || 'http://localhost:8000/api'),
         'process.env.SOCKET_URL': JSON.stringify(process.env.SOCKET_URL || 'http://localhost:8000'),
       }),
     ],

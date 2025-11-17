@@ -3,7 +3,7 @@ from main import app
 import pytest
 from unittest.mock import MagicMock
 from models import Team, PydanticObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 
 client = TestClient(app)
@@ -34,8 +34,8 @@ def sample_team_data():
         "members": [{"user_id": str(PydanticObjectId()), "name": "Member One"}],
         "chat": [],
         "files": [],
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 def test_create_team(mocker, sample_team_data):

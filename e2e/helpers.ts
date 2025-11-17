@@ -49,9 +49,16 @@ export async function createSchool(page: Page, schoolName: string, email: string
   await page.fill('input[name="name"]', schoolName);
   await page.fill('input[name="email"]', email);
   await page.click('button[type="submit"]');
-  
+
+  // Wait for password to appear
+  await page.waitForSelector('[data-testid="generated-password"]');
+
   // Get generated password from the UI
   const passwordElement = await page.locator('[data-testid="generated-password"]').textContent();
+
+  // Close the dialog
+  await page.click('button:has-text("Close")');
+
   return passwordElement || '';
 }
 
@@ -64,20 +71,20 @@ export async function generateTokens(page: Page, count: number): Promise<string[
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
   }
-  
+
   await page.fill('input[name="count"]', count.toString());
   await page.click('button:has-text("Generate")');
-  
+
   // Wait for tokens to appear
   await page.waitForSelector('[data-testid="token"]');
-  
+
   const tokens: string[] = [];
   const tokenElements = await page.locator('[data-testid="token"]').all();
   for (const element of tokenElements) {
     const token = await element.textContent();
     if (token) tokens.push(token);
   }
-  
+
   return tokens;
 }
 
@@ -115,18 +122,18 @@ export async function createCompetition(
   // Navigate to competition management page
   await page.click('button:has-text("Manage Competitions")');
   await page.waitForURL('/headteacher/competitions');
-  
+
   await page.click('button:has-text("Create Competition")');
   await page.fill('input[name="name"]', name);
   await page.fill('textarea[name="description"]', 'Test competition description');
   await page.fill('input[name="maxTeams"]', maxTeams.toString());
   await page.fill('input[name="maxMembers"]', maxMembers.toString());
-  
+
   // Select scope using MUI dropdown
   await page.click('[role="combobox"]');
   const optionText = scope === 'global' ? 'Global' : 'School Only';
   await page.click(`li[role="option"]:has-text("${optionText}")`);
-  
+
   await page.click('button[type="submit"]');
 }
 

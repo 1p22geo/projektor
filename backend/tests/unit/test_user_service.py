@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from services import user_service
 from models import User, PydanticObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 
 @pytest.fixture
 def mock_db_collection(mocker):
@@ -18,8 +18,8 @@ def sample_user_data():
         "email": "test@example.com",
         "password": "hashedpassword",
         "role": "student",
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
 def test_create_user(mock_db_collection, sample_user_data):

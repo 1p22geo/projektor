@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, Alert, CircularProgress, List, ListItem, ListItemText, IconButton } from '@mui/material';
 import { CloudUpload as CloudUploadIcon, GetApp as GetAppIcon } from '@mui/icons-material';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import useSWR from 'swr';
-import { fetcher } from '@core/hooks/useApi';
 
 interface FileData {
   id: string;
@@ -25,7 +24,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
-  const { data: files, error: fetchError, isLoading: filesLoading, mutate } = useSWR<FileData[]>(teamId ? `/api/teams/${teamId}/files` : null, fetcher);
+  const { data: files, error: fetchError, isLoading: filesLoading, mutate } = useSWR<FileData[]>(teamId ? `/teams/${teamId}/files` : null, (url) => apiClient.get(url).then(res => res.data));
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
@@ -51,7 +50,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
     formData.append('file', selectedFile);
 
     try {
-      await axiosInstance.post(`/api/teams/${teamId}/files`, formData, {
+      await apiClient.post(`/teams/${teamId}/files`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -68,7 +67,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
 
   const handleFileDownload = (fileId: string, filename: string) => {
     // This will trigger a download from the backend
-    window.open(`/api/files/${fileId}`, '_blank');
+    window.open(`/files/${fileId}`, '_blank');
   };
 
   return (

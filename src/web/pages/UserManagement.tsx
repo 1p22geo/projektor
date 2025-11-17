@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Typography, 
-  Button as MuiButton, 
+import {
+  Container,
+  Typography,
+  Button as MuiButton,
   Box,
   Table,
   TableBody,
@@ -30,7 +30,7 @@ import { useExportUserData } from '@core/hooks/admin/useExportUserData';
 import { useDeleteUserData } from '@core/hooks/admin/useDeleteUserData';
 
 interface User {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
@@ -77,9 +77,10 @@ const UserManagement: React.FC = () => {
 
   const handleResetPassword = async () => {
     if (!selectedUser) return;
-    
+    console.log(selectedUser);
+
     try {
-      const response = await apiClient.put(`/admin/users/${selectedUser.id}/reset-password`);
+      const response = await apiClient.put(`/admin/users/${selectedUser._id}/reset-password`);
       setNewPassword(response.data.new_password);
       setShowPasswordDialog(true);
       setSuccess('Password reset successfully');
@@ -91,9 +92,9 @@ const UserManagement: React.FC = () => {
 
   const handleDeleteUser = async () => {
     if (!selectedUser) return;
-    
+
     try {
-      await apiClient.delete(`/admin/users/${selectedUser.id}`);
+      await apiClient.delete(`/admin/users/${selectedUser._id}`);
       setSuccess('User deleted successfully');
       setShowDeleteDialog(false);
       handleMenuClose();
@@ -105,8 +106,8 @@ const UserManagement: React.FC = () => {
 
   const handleExportData = async () => {
     if (!selectedUser) return;
-    
-    const data = await exportUserData(selectedUser.id);
+
+    const data = await exportUserData(selectedUser._id);
     if (data) {
       setExportedData(JSON.stringify(data, null, 2));
       setShowExportDialog(true);
@@ -119,8 +120,8 @@ const UserManagement: React.FC = () => {
 
   const handleDeleteAllUserData = async () => {
     if (!selectedUser) return;
-    
-    const success = await deleteUserData(selectedUser.id);
+
+    const success = await deleteUserData(selectedUser._id);
     if (success) {
       setSuccess('All user data deleted successfully');
       setShowDeleteDialog(false); // Close the regular delete dialog if open
@@ -154,8 +155,8 @@ const UserManagement: React.FC = () => {
             Back to Dashboard
           </MuiButton>
         </Link>
-        <MuiButton 
-          data-testid="logout" 
+        <MuiButton
+          data-testid="logout"
           startIcon={<LogoutIcon />}
           onClick={handleLogout}
           variant="outlined"
@@ -163,7 +164,7 @@ const UserManagement: React.FC = () => {
           Logout
         </MuiButton>
       </Box>
-      
+
       <Typography variant="h4" component="h2" gutterBottom>
         Users
       </Typography>
@@ -190,7 +191,7 @@ const UserManagement: React.FC = () => {
               </TableRow>
             ) : (
               users.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user._id}>
                   <TableCell data-testid="user-name">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>

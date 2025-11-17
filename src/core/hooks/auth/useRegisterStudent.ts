@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 
 interface RegisterStudentData {
   token: string;
@@ -16,7 +16,7 @@ export const useRegisterStudent = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.post('/api/auth/register/student', registerData);
+      await apiClient.post('/auth/register/student', registerData);
       setLoading(false);
       return true;
     } catch (err: any) {

@@ -13,7 +13,7 @@ export default defineConfig({
     ['html'],
     ['list'],
   ],
-  timeout: 60000,
+  timeout: 20000,
   use: {
     baseURL: 'http://localhost:8080',
     trace: 'on-first-retry',
@@ -33,13 +33,10 @@ export default defineConfig({
 
   webServer: [
     {
-      command: 'NODE_ENV=test pnpm backend:dev',
+      command: 'pnpm backend:test:e2e',
       port: 8000,
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
-      env: {
-        NODE_ENV: 'test',
-      },
     },
     {
       command: 'pnpm start:web',

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 
 export const useExportUserData = () => {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export const useExportUserData = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.get(`/api/admin/users/${userId}/export`);
+      const response = await apiClient.get(`/admin/users/${userId}/export`);
       setLoading(false);
       return response.data;
     } catch (err: any) {

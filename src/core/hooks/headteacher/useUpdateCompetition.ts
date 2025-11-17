@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useCompetitions } from './useCompetitions'; // To revalidate the competitions list
 
 interface UpdateCompetitionData {
@@ -20,7 +20,7 @@ export const useUpdateCompetition = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.put(`/api/headteacher/competitions/${competitionId}`, competitionData);
+      await apiClient.put(`/headteacher/competitions/${competitionId}`, competitionData);
       mutate(); // Revalidate the competitions list
       setLoading(false);
       return true;

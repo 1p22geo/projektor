@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 
 export const useGenerateTokens = () => {
   const [loading, setLoading] = useState(false);
@@ -11,7 +11,7 @@ export const useGenerateTokens = () => {
     setError(null);
     setTokens([]);
     try {
-      const response = await axiosInstance.post('/api/headteacher/tokens', { count });
+      const response = await apiClient.post('/headteacher/tokens', { count });
       setTokens(response.data.tokens);
       setLoading(false);
       return response.data.tokens;

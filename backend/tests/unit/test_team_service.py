@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import MagicMock
 from services import team_service
 from models import Team, PydanticObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 
 @pytest.fixture
 def mock_db_collection(mocker):
@@ -19,8 +19,8 @@ def sample_team_data():
         "members": [{"user_id": PydanticObjectId(), "name": "Member One"}],
         "chat": [],
         "files": [],
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
     }
 
 def test_create_team(mock_db_collection, sample_team_data):
@@ -106,7 +106,7 @@ def test_add_member_to_team(mock_db_collection, sample_team_data):
     updated_team = team_service.add_member_to_team(sample_team_data["_id"], user_id, user_name)
     
     assert len(updated_team.members) == len(sample_team_data["members"]) + 1
-    assert updated_team.members[-1]["user_id"] == user_id
+    assert str(updated_team.members[-1]["user_id"]) == str(user_id)
     mock_db_collection.update_one.assert_called_once_with(
         {"_id": sample_team_data["_id"]},
         {"$push": {"members": {"user_id": user_id, "name": user_name}}}

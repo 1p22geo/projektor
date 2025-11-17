@@ -9,7 +9,7 @@ interface ChatMessage {
 }
 
 export const useGetTeamChat = (teamId: string) => {
-  const { data, error, isLoading, mutate } = useSWR<ChatMessage[]>(teamId ? `/api/headteacher/teams/${teamId}/chat` : null, fetcher);
+  const { data, error, isLoading, mutate } = useSWR<ChatMessage[]>(teamId ? `/headteacher/teams/${teamId}/chat` : null, fetcher);
 
   return {
     chatMessages: data,

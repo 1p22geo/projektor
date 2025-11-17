@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import apiClient from '@core/api/apiClient';
+import { fetcher } from '@core/hooks/useApi';
 
 interface ChatMessage {
   _id: string;
@@ -18,7 +18,7 @@ interface TeamFile {
 }
 
 export const useGetTeamChat = (teamId: string) => {
-  const { data, error } = useSWR<ChatMessage[]>(teamId ? `/headteacher/teams/${teamId}/chat` : null, apiClient.get);
+  const { data, error } = useSWR<ChatMessage[]>(teamId ? `/headteacher/teams/${teamId}/chat` : null, fetcher);
   return {
     chatMessages: data,
     loading: !error && !data,
@@ -27,7 +27,7 @@ export const useGetTeamChat = (teamId: string) => {
 };
 
 export const useGetTeamFiles = (teamId: string) => {
-  const { data, error } = useSWR<TeamFile[]>(teamId ? `/headteacher/teams/${teamId}/files` : null, apiClient.get);
+  const { data, error } = useSWR<TeamFile[]>(teamId ? `/headteacher/teams/${teamId}/files` : null, fetcher);
   return {
     teamFiles: data,
     loading: !error && !data,

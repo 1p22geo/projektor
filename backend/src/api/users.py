@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Body, HTTPException
 from typing import List
-from services import user_service
+from src.services import user_service
 from pydantic import BaseModel, EmailStr
-from models import User, UserOut, PydanticObjectId
+from src.models import User, UserOut, PydanticObjectId
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -31,8 +31,8 @@ def create_user(user_data: UserCreateRequest = Body(...)):
         email=user_data.email,
         password=user_data.password,  # This should be hashed before saving
         role="student",  # Default role for direct creation, can be changed by admin
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
     )
     created_user = user_service.create_user(new_user)
     return UserOut(**created_user.model_dump())

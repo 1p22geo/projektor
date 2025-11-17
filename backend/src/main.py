@@ -45,7 +45,7 @@ async def health_check():
 
 
 # Include routers here as they are created
-from api import users, teams, competitions, auth, admin, headteacher, student
+from src.api import users, teams, competitions, auth, admin, headteacher, student
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(headteacher.router, prefix="/api/headteacher", tags=["headteacher"])

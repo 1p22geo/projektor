@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api'; // Assuming axiosInstance is configured for API calls
+import apiClient from '@core/api/apiClient';
 
 const useLoginAdmin = () => {
   const [loading, setLoading] = useState(false);
@@ -9,9 +9,9 @@ const useLoginAdmin = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.post('/api/auth/login/admin', { password });
-      const { token, user } = response.data;
-      localStorage.setItem('authToken', token);
+      const response = await apiClient.post('/auth/login/admin', { password });
+      const { access_token, user } = response.data;
+      localStorage.setItem('authToken', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       setLoading(false);
       return true;

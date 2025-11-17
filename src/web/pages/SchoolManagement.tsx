@@ -62,6 +62,7 @@ const SchoolManagement: React.FC = () => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setGeneratedPassword('');
     
     try {
       const response = await apiClient.post('/admin/schools', {
@@ -69,15 +70,27 @@ const SchoolManagement: React.FC = () => {
         email: schoolEmail
       });
       
-      setGeneratedPassword(response.data.generated_password);
-      setSuccess('School created successfully');
-      setShowCreateForm(false);
-      setNewSchoolName('');
-      setSchoolEmail('');
-      loadSchools();
+      // Ensure state updates happen
+      const password = response.data.generated_password;
+      if (password) {
+        setGeneratedPassword(password);
+        setSuccess('School created successfully');
+        setNewSchoolName('');
+        setSchoolEmail('');
+        await loadSchools();
+      } else {
+        setError('School created but no password returned');
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create school');
     }
+  };
+  
+  const handleCloseCreateDialog = () => {
+    setShowCreateForm(false);
+    setGeneratedPassword('');
+    setSuccess('');
+    setError('');
   };
 
   const handleDeleteSchool = async (schoolId: string) => {
@@ -120,12 +133,6 @@ const SchoolManagement: React.FC = () => {
       </Typography>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }} role="alert" onClose={() => setSuccess('')}>{success}</Alert>}
-      {generatedPassword && (
-        <Alert severity="info" sx={{ mb: 2 }}>
-          Headteacher password: <strong data-testid="generated-password">{generatedPassword}</strong>
-        </Alert>
-      )}
       
       <Box sx={{ mb: 3 }}>
         <Button onClick={() => setShowCreateForm(true)}>
@@ -133,10 +140,20 @@ const SchoolManagement: React.FC = () => {
         </Button>
       </Box>
 
-      <Dialog open={showCreateForm} onClose={() => setShowCreateForm(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New School</DialogTitle>
-        <DialogContent>
-          <Box component="form" onSubmit={handleCreateSchool} id="create-school-form">
+      <Dialog open={showCreateForm} onClose={handleCloseCreateDialog} maxWidth="sm" fullWidth>
+        <form onSubmit={handleCreateSchool}>
+          <DialogTitle>Create New School</DialogTitle>
+          <DialogContent sx={{ pt: 2 }}>
+            {generatedPassword && success && (
+              <Alert severity="success" sx={{ mb: 2, mt: 1 }} role="alert">
+                School created successfully! Headteacher password: <strong data-testid="generated-password">{generatedPassword}</strong>
+              </Alert>
+            )}
+            {error && (
+              <Alert severity="error" sx={{ mb: 2, mt: 1 }} role="alert">
+                {error}
+              </Alert>
+            )}
             <Input
               name="name"
               label="School Name"
@@ -144,6 +161,7 @@ const SchoolManagement: React.FC = () => {
               value={newSchoolName}
               onChange={(e) => setNewSchoolName(e.target.value)}
               required
+              disabled={!!generatedPassword}
             />
             <Input
               name="email"
@@ -152,13 +170,20 @@ const SchoolManagement: React.FC = () => {
               value={schoolEmail}
               onChange={(e) => setSchoolEmail(e.target.value)}
               required
+              disabled={!!generatedPassword}
             />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <MuiButton onClick={() => setShowCreateForm(false)}>Cancel</MuiButton>
-          <Button type="submit" form="create-school-form">Create</Button>
-        </DialogActions>
+          </DialogContent>
+          <DialogActions>
+            {generatedPassword ? (
+              <MuiButton type="button" onClick={handleCloseCreateDialog}>Close</MuiButton>
+            ) : (
+              <>
+                <MuiButton type="button" onClick={handleCloseCreateDialog}>Cancel</MuiButton>
+                <Button type="submit">Create</Button>
+              </>
+            )}
+          </DialogActions>
+        </form>
       </Dialog>
 
       <TableContainer component={Paper}>

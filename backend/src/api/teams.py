@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, HTTPException
 from typing import List
-from services import team_service
-from models import Team, PydanticObjectId
+from src.services import team_service
+from src.models import Team, PydanticObjectId
 from pydantic import BaseModel
 from typing import Optional, Dict
 

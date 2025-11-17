@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 
 export const useRequestToJoinTeam = () => {
   const [loading, setLoading] = useState(false);
@@ -9,7 +9,7 @@ export const useRequestToJoinTeam = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.post(`/api/teams/${teamId}/join-requests`);
+      await apiClient.post(`/teams/${teamId}/join-requests`);
       setLoading(false);
       return true;
     } catch (err: any) {

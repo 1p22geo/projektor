@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useSchools } from './useSchools'; // To revalidate the schools list
 
 export const useDeleteSchool = () => {
@@ -11,7 +11,7 @@ export const useDeleteSchool = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.delete(`/api/admin/schools/${schoolId}`);
+      await apiClient.delete(`/admin/schools/${schoolId}`);
       mutate(); // Revalidate the schools list
       setLoading(false);
       return true;

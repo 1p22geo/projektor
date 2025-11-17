@@ -3,7 +3,7 @@ from main import app
 import pytest
 from unittest.mock import MagicMock
 from models import User, PydanticObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 import hashlib
 
 client = TestClient(app)
@@ -33,8 +33,8 @@ def sample_user_data():
         "email": "test@example.com",
         "password": hashlib.sha256("password".encode()).hexdigest(),
         "role": "student",
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
 def test_create_user(mocker, sample_user_data):

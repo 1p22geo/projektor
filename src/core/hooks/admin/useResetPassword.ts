@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useUsers } from './useUsers'; // To revalidate the users list
 
 export const useResetPassword = () => {
@@ -11,7 +11,7 @@ export const useResetPassword = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axiosInstance.put(`/api/admin/users/${userId}/reset-password`);
+      const response = await apiClient.put(`/admin/users/${userId}/reset-password`);
       mutate(); // Revalidate the users list
       setLoading(false);
       return response.data.new_password;

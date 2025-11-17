@@ -1,5 +1,5 @@
-from database import db
-from models import Competition, PydanticObjectId
+from src.database import db
+from src.models import Competition, PydanticObjectId
 from typing import List, Optional
 from datetime import datetime, timezone
 

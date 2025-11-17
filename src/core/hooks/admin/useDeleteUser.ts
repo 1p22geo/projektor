@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useUsers } from './useUsers'; // To revalidate the users list
 
 export const useDeleteUser = () => {
@@ -11,7 +11,7 @@ export const useDeleteUser = () => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.delete(`/api/admin/users/${userId}`);
+      await apiClient.delete(`/admin/users/${userId}`);
       mutate(); // Revalidate the users list
       setLoading(false);
       return true;

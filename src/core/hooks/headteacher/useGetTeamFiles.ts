@@ -12,7 +12,7 @@ interface FileData {
 }
 
 export const useGetTeamFiles = (teamId: string) => {
-  const { data, error, isLoading, mutate } = useSWR<FileData[]>(teamId ? `/api/headteacher/teams/${teamId}/files` : null, fetcher);
+  const { data, error, isLoading, mutate } = useSWR<FileData[]>(teamId ? `/headteacher/teams/${teamId}/files` : null, fetcher);
 
   return {
     files: data,

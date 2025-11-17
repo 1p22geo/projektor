@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axiosInstance from '@core/api';
+import apiClient from '@core/api/apiClient';
 import { useJoinRequests } from './useJoinRequests'; // To revalidate the join requests list
 
 export const useHandleJoinRequest = (teamId: string) => {
@@ -11,7 +11,7 @@ export const useHandleJoinRequest = (teamId: string) => {
     setLoading(true);
     setError(null);
     try {
-      await axiosInstance.put(`/api/teams/${teamId}/join-requests/${requestId}`, { status });
+      await apiClient.put(`/teams/${teamId}/join-requests/${requestId}`, { status });
       mutate(); // Revalidate the join requests list
       setLoading(false);
       return true;

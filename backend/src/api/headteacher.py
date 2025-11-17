@@ -6,9 +6,9 @@ import secrets
 import hashlib
 from datetime import datetime
 from bson import ObjectId
-from database import db
-from api.auth import SECRET_KEY, ALGORITHM, get_current_user
-from models import User, School, Competition, Team, PydanticObjectId, RegistrationToken, ChatMessage, File
+from src.database import db
+from src.api.auth import SECRET_KEY, ALGORITHM, get_current_user
+from src.models import User, School, Competition, Team, PydanticObjectId, RegistrationToken, ChatMessage, File
 
 router = APIRouter()
 
@@ -37,7 +37,7 @@ def generate_tokens(request: TokenGenerateRequest, current_user: User = Depends(
             token=token_str,
             school_id=PydanticObjectId(user["school_id"]),
             used=False,
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         result = registration_tokens_collection.insert_one(token_doc.dict(by_alias=True))
         tokens.append(token_str)
@@ -93,8 +93,8 @@ def create_competition(competition: CompetitionCreateRequest, current_user: User
         is_global=competition.is_global,
         school_id=PydanticObjectId(user["school_id"]),
         created_by=current_user.id,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
     )
     
     result = competitions_collection.insert_one(comp_doc.dict(by_alias=True))
@@ -117,7 +117,7 @@ def update_competition(competition_id: PydanticObjectId, data: CompetitionUpdate
     competitions_collection = db.get_collection("competitions")
     
     update_data = data.dict(exclude_unset=True)
-    update_data["updated_at"] = datetime.utcnow()
+    update_data["updated_at"] = datetime.now(timezone.utc)
     
     result = competitions_collection.update_one(
         {"_id": competition_id},
@@ -204,7 +204,7 @@ def remove_team_member(team_id: PydanticObjectId, member_id: PydanticObjectId, c
     
     teams_collection.update_one(
         {"_id": team_id},
-        {"$set": {"members": [m.dict() for m in team.members], "updated_at": datetime.utcnow()}}
+        {"$set": {"members": [m.dict() for m in team.members], "updated_at": datetime.now(timezone.utc)}}
     )
     
     return {"message": "Member removed successfully"}
