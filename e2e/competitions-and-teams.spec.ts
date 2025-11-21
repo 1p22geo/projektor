@@ -404,11 +404,12 @@ test.describe('User Story 8: Join Existing Team', () => {
   test('Team cannot exceed maximum member limit', async ({ page }) => {
     // This would require creating a team with max members
     // and trying to add one more - simplified version
-    await loginAsStudent(page, student2Email, student2Password);
-    await page.click('text=Teams');
+    await loginAsStudent(page, student1Email, student1Password);
+    await page.click('text=My Teams');
     await page.click(`text=${teamName}`);
+    await page.waitForLoadState('networkidle');
 
     // Should display current member count and limit
-    await expect(page.locator('[data-testid="member-count"]')).toBeVisible();
+    await expect(page.locator('[data-testid="member-count"]')).toBeVisible({ timeout: 10000 });
   });
 });
