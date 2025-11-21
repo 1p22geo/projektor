@@ -61,5 +61,9 @@ Available variables:
 
 - `API_URL` - Backend API URL (default: `http://localhost:3000/api`)
 - `SOCKET_URL` - WebSocket server URL (default: `http://localhost:3000`)
-- `NODE_ENV` - Environment mode (set automatically)
+- `ADMIN_PASSWORD` - Default admin password for first login.
 - `ANDROID_HOME` - Path to Android SDK (required for Android builds)
+- `JAVA_HOME` - Path to Java JDK (required for Android builds)
+- `MONGO_URI` - MongoDB connection string (please include database name)
+- `MONGO_TEST_DATABASE` - Just the database name, used for testing.
+- `NODE_ENV` - Environment mode (set automatically)
