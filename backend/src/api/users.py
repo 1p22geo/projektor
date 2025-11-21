@@ -1,10 +1,11 @@
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Depends
 from typing import List
-from src.services import user_service
+from services import user_service
 from pydantic import BaseModel, EmailStr
-from src.models import User, UserOut, PydanticObjectId
+from models import User, UserOut, PydanticObjectId
 from typing import Optional
 from datetime import datetime, timezone
+from api.auth import get_current_user, verify_password
 
 router = APIRouter()
 
@@ -21,6 +22,10 @@ class UserUpdateRequest(BaseModel):
     password: Optional[str] = None  # This will be hashed in the service
     role: Optional[str] = None
     school_id: Optional[PydanticObjectId] = None
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
 
 
 @router.post("/", response_model=UserOut)
@@ -41,6 +46,24 @@ def create_user(user_data: UserCreateRequest = Body(...)):
 @router.get("/", response_model=List[UserOut])
 def get_users():
     return user_service.get_users()
+
+
+@router.delete("/me")
+def delete_own_account(
+    request: DeleteAccountRequest = Body(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Allow authenticated user to delete their own account"""
+    # Verify password
+    if not verify_password(request.password, current_user.password):
+        raise HTTPException(status_code=401, detail="Invalid password")
+    
+    # Delete the user
+    result = user_service.delete_user(current_user.id)
+    if result["deleted_count"] == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "Account deleted successfully"}
 
 
 @router.get("/{user_id}", response_model=UserOut)

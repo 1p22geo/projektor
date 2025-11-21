@@ -1,110 +1,165 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, TextInput } from 'react-native';
-import { Text, Card } from 'react-native-paper';
-import { getSocket } from '@core/api/socket';
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, TextField, Paper, Typography, List, ListItem, ListItemText } from '@mui/material';
 import Button from './Button';
+import { getWebSocketManager } from '@core/api/socket';
+import apiClient from '@core/api/apiClient';
+import useSWR from 'swr';
+
+interface ChatMessage {
+  id?: string;
+  user_id: string;
+  user_name: string;
+  message: string;
+  created_at: string;
+}
 
 interface ChatProps {
   teamId: string;
 }
 
-interface Message {
-  user: string;
-  message: string;
-  createdAt: string;
-}
-
 const Chat: React.FC<ChatProps> = ({ teamId }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const socket = getSocket();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const wsManager = getWebSocketManager();
+  
+  // Fetch existing messages
+  const { data: messages = [], mutate } = useSWR<ChatMessage[]>(
+    teamId ? `/teams/${teamId}/chat` : null,
+    (url) => apiClient.get(url).then(res => res.data),
+    { refreshInterval: 2000 } // Poll every 2 seconds as fallback
+  );
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
+    if (!teamId) return;
+
+    // Try to connect to WebSocket, but don't fail if it doesn't work
+    try {
+      wsManager.connect(teamId);
+
+      // Listen for new messages
+      const unsubscribe = wsManager.onMessage(teamId, (data: ChatMessage) => {
+        if (data.message) {
+          // Revalidate to get the latest messages
+          mutate();
+        }
+      });
+
+      return () => {
+        unsubscribe();
+        try {
+          wsManager.disconnect(teamId);
+        } catch (e) {
+          // Ignore disconnect errors
+        }
+      };
+    } catch (e) {
+      console.warn('WebSocket connection failed, using polling instead:', e);
     }
+  }, [teamId, wsManager, mutate]);
 
-    socket.emit('join_room', { teamId });
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
-    socket.on('message', (message: Message) => {
-      setMessages((prevMessages) => [...prevMessages, message]);
-    });
+  const handleSendMessage = async () => {
+    if (newMessage.trim() && teamId) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const messageData = {
+        user_id: user.id,
+        user_name: user.email || user.name || 'Anonymous',
+        message: newMessage,
+      };
 
-    return () => {
-      socket.emit('leave_room', { teamId });
-      socket.off('message');
-    };
-  }, [teamId, socket]);
-
-  const handleSendMessage = () => {
-    if (newMessage.trim() && socket) {
-      const user = 'CurrentUser';
-      socket.emit('new_message', { teamId, user, message: newMessage });
-      setNewMessage('');
+      try {
+        // Send to backend API
+        await apiClient.post(`/teams/${teamId}/chat`, messageData);
+        
+        // Try to broadcast via WebSocket, but don't fail if it doesn't work
+        try {
+          wsManager.send(teamId, messageData);
+        } catch (e) {
+          console.warn('WebSocket send failed:', e);
+        }
+        
+        setNewMessage('');
+        mutate(); // Refresh messages
+      } catch (error) {
+        console.error('Failed to send message:', error);
+      }
     }
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.messagesContainer}>
+    <Box sx={{ mt: 4 }} role="tabpanel">
+      <Typography variant="h6" gutterBottom>
+        Team Chat
+      </Typography>
+      <Paper 
+        variant="outlined" 
+        sx={{ height: 300, overflow: 'auto', p: 2, mb: 2 }}
+        data-testid="chat-messages"
+      >
         {messages.length === 0 ? (
-          <Text style={styles.emptyText}>
+          <Typography variant="body2" color="text.secondary">
             No messages yet. Start the conversation!
-          </Text>
+          </Typography>
         ) : (
-          messages.map((msg, index) => (
-            <Card key={index} style={styles.messageCard}>
-              <Card.Content>
-                <Text variant="labelLarge">{msg.user}</Text>
-                <Text variant="bodyMedium">{msg.message}</Text>
-              </Card.Content>
-            </Card>
-          ))
+          <List>
+            {messages.map((msg, index) => (
+              <ListItem key={msg.id || index} disablePadding sx={{ mb: 1 }}>
+                <ListItemText 
+                  primary={
+                    <Box>
+                      <Typography 
+                        component="span" 
+                        variant="subtitle2" 
+                        data-testid="message-sender"
+                      >
+                        {msg.user_name}:
+                      </Typography>{' '}
+                      {msg.message}
+                    </Box>
+                  }
+                  secondary={
+                    <Typography 
+                      variant="caption" 
+                      color="text.secondary"
+                      data-testid="message-timestamp"
+                    >
+                      {new Date(msg.created_at).toLocaleString()}
+                    </Typography>
+                  }
+                />
+              </ListItem>
+            ))}
+            <div ref={messagesEndRef} />
+          </List>
         )}
-      </ScrollView>
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message..."
+      </Paper>
+      <Box component="form" sx={{ display: 'flex', gap: 1 }} onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }}>
+        <TextField
+          name="message"
+          placeholder="Type your message..."
+          fullWidth
           value={newMessage}
-          onChangeText={setNewMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
         />
-        <Button onPress={handleSendMessage}>Send</Button>
-      </View>
-    </View>
+        <Button type="submit" variant="contained">
+          Send
+        </Button>
+      </Box>
+    </Box>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    marginTop: 16,
-  },
-  messagesContainer: {
-    maxHeight: 400,
-    marginBottom: 16,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#666',
-    paddingVertical: 32,
-  },
-  messageCard: {
-    marginBottom: 8,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 12,
-    backgroundColor: '#fff',
-  },
-});
 
 export default Chat;

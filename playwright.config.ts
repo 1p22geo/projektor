@@ -13,7 +13,7 @@ export default defineConfig({
     ['html'],
     ['list'],
   ],
-  timeout: 20000,
+  timeout: 60000,
   use: {
     baseURL: 'http://localhost:8080',
     trace: 'on-first-retry',

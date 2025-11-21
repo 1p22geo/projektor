@@ -5,8 +5,8 @@ import secrets
 import hashlib
 from datetime import datetime, timedelta, timezone
 import jwt
-from src.database import db
-from src.models import User, PydanticObjectId, RegistrationToken, School
+from database import db
+from models import User, PydanticObjectId, RegistrationToken, School
 
 router = APIRouter()
 
@@ -50,6 +50,11 @@ def create_access_token(data: dict):
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plain password against a hashed password"""
+    return hash_password(plain_password) == hashed_password
+
 @router.post("/login", response_model=TokenResponse)
 def login(credentials: LoginRequest = Body(...)):
     users_collection = db.get_collection("users")
@@ -58,21 +63,28 @@ def login(credentials: LoginRequest = Body(...)):
     if not user_data:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    user = User(**user_data)
-    
+    # Check password
     hashed_password = hash_password(credentials.password)
-    if user.password != hashed_password:
+    if user_data.get("password") != hashed_password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Use the actual _id from database for JWT
+    user_id = str(user_data["_id"])
+    
     access_token = create_access_token({
-        "sub": str(user.id),
-        "email": user.email,
-        "role": user.role
+        "sub": user_id,
+        "email": user_data["email"],
+        "role": user_data["role"]
     })
     
-    user_dict = user.dict(by_alias=True)
-    user_dict["id"] = str(user.id)
-    user_dict.pop("password", None)
+    # Return user info without password
+    user_dict = {
+        "id": user_id,
+        "name": user_data.get("name"),
+        "email": user_data["email"],
+        "role": user_data["role"],
+        "school_id": user_data.get("school_id")
+    }
     
     return {"access_token": access_token, "user": user_dict}
 
@@ -101,36 +113,34 @@ def register_student(data: RegisterStudentRequest = Body(...)):
     registration_tokens_collection = db.get_collection("registration_tokens")
     
     # Verify registration token
-    token_doc_data = registration_tokens_collection.find_one({"token": data.token, "used": False})
-    if not token_doc_data:
+    token_doc_data = registration_tokens_collection.find_one({"token": data.token})
+    if not token_doc_data or token_doc_data.get("used"):
         raise HTTPException(status_code=400, detail="Invalid or already used token")
-    
-    token_doc = RegistrationToken(**token_doc_data)
     
     # Check if email already exists
     existing_user_data = users_collection.find_one({"email": data.email})
     if existing_user_data:
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    # Create user
+    # Create user - school_id is stored as string
     hashed_password = hash_password(data.password)
-    user = User(
-        name=data.name,
-        email=data.email,
-        password=hashed_password,
-        role="student",
-        school_id=token_doc.school_id,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc)
-    )
+    user_dict = {
+        "name": data.name,
+        "email": data.email,
+        "password": hashed_password,
+        "role": "student",
+        "school_id": token_doc_data["school_id"],  # Use school_id as-is (string)
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
     
-    result = users_collection.insert_one(user.dict(by_alias=True))
-    user.id = result.inserted_id
+    result = users_collection.insert_one(user_dict)
+    user_id = result.inserted_id
     
-    # Mark token as used
+    # Mark token as used (flexible ID lookup)
     registration_tokens_collection.update_one(
-        {"_id": token_doc.id},
-        {"$set": {"used": True, "used_by": user.id, "used_at": datetime.now(timezone.utc)}}
+        {"_id": token_doc_data["_id"]},
+        {"$set": {"used": True, "used_by": str(user_id), "used_at": datetime.now(timezone.utc)}}
     )
     
     return {"message": "Registration successful"}
@@ -152,7 +162,15 @@ def get_current_user(authorization: str = Header(None)):
             return User(id=None, name="Admin", email=None, password=None, role="admin")
         
         users_collection = db.get_collection("users")
-        user_data = users_collection.find_one({"_id": PydanticObjectId(user_id)})
+        # Try to find user by string ID first, then by ObjectId
+        user_data = users_collection.find_one({"_id": user_id})
+        if not user_data:
+            try:
+                from bson import ObjectId
+                user_data = users_collection.find_one({"_id": ObjectId(user_id)})
+            except:
+                pass
+        
         if user_data is None:
             raise HTTPException(status_code=401, detail="User not found")
         

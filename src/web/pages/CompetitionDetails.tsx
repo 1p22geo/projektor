@@ -17,7 +17,9 @@ import {
   Select,
   MenuItem,
   FormControl,
-  InputLabel
+  InputLabel,
+  Card,
+  CardContent
 } from '@mui/material';
 import { ArrowBack as ArrowBackIcon, Logout as LogoutIcon } from '@mui/icons-material';
 import Button from '@platform/components/Button';
@@ -31,6 +33,11 @@ interface Competition {
   is_global: boolean;
   max_teams: number;
   max_members_per_team: number;
+  teams?: Array<{
+    id: string;
+    name: string;
+    members: Array<{ user_id: string; name: string; email?: string }>;
+  }>;
 }
 
 const CompetitionDetails: React.FC = () => {
@@ -41,6 +48,9 @@ const CompetitionDetails: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateTeamDialog, setShowCreateTeamDialog] = useState(false);
+  const [teamName, setTeamName] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -48,6 +58,12 @@ const CompetitionDetails: React.FC = () => {
     max_teams: 10,
     max_members_per_team: 4,
   });
+  
+  // Detect user role
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const role = user?.role || 'student';
+  const isHeadteacher = role === 'headteacher';
 
   useEffect(() => {
     loadCompetition();
@@ -56,7 +72,13 @@ const CompetitionDetails: React.FC = () => {
   const loadCompetition = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/headteacher/competitions/${competitionId}`);
+      
+      // Detect user role to call appropriate endpoint
+      const endpoint = isHeadteacher 
+        ? `/headteacher/competitions/${competitionId}`
+        : `/student/competitions/${competitionId}`;
+      
+      const response = await apiClient.get(endpoint);
       setCompetition(response.data);
       setFormData({
         name: response.data.name,
@@ -66,7 +88,9 @@ const CompetitionDetails: React.FC = () => {
         max_members_per_team: response.data.max_members_per_team,
       });
     } catch (err: any) {
-      setError('Failed to load competition');
+      console.error('Failed to load competition:', err);
+      const errorMsg = err.response?.data?.detail || err.message || 'Failed to load competition';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -75,15 +99,87 @@ const CompetitionDetails: React.FC = () => {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiClient.put(`/headteacher/competitions/${competitionId}`, {
+      console.log('Updating competition with:', formData);
+      const response = await apiClient.put(`/headteacher/competitions/${competitionId}`, {
         ...formData,
         is_global: formData.scope === 'global'
       });
-      setSuccess('Competition updated successfully');
+      console.log('Update response:', response.data);
       setShowEditDialog(false);
-      loadCompetition();
+      // Update local state immediately with the new data
+      if (competition) {
+        setCompetition({
+          ...competition,
+          name: formData.name,
+          description: formData.description,
+          is_global: formData.scope === 'global',
+          max_teams: formData.max_teams,
+          max_members_per_team: formData.max_members_per_team,
+        });
+      }
+      setSuccess('Competition updated successfully');
+      // Navigate back to list with success message
+      setTimeout(() => {
+        navigate('/headteacher/competitions', { 
+          state: { successMessage: 'Competition updated successfully', refresh: Date.now() } 
+        });
+      }, 1000);
     } catch (err: any) {
+      console.error('Update error:', err);
       setError('Failed to update competition');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await apiClient.delete(`/headteacher/competitions/${competitionId}`);
+      setSuccess('Competition deleted successfully');
+      setShowDeleteDialog(false);
+      // Navigate with state to show success message on the list page
+      setTimeout(() => {
+        navigate('/headteacher/competitions', { state: { successMessage: 'Competition deleted successfully' } });
+      }, 1500);
+    } catch (err: any) {
+      setError('Failed to delete competition');
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleOpenCreateTeamDialog = async () => {
+    try {
+      // Check if user is already in a team for this competition
+      const teamsResponse = await apiClient.get(`/student/competitions/${competitionId}/my-team`);
+      if (teamsResponse.data) {
+        setError('Already in a team for this competition');
+        return;
+      }
+    } catch (err: any) {
+      // 404 means not in a team, which is expected
+      if (err.response?.status !== 404) {
+        console.error('Error checking team membership:', err);
+      }
+    }
+    setShowCreateTeamDialog(true);
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await apiClient.post(`/student/competitions/${competitionId}/teams`, {
+        name: teamName
+      });
+      setShowCreateTeamDialog(false);
+      setTeamName('');
+      // Navigate immediately to the team page
+      if (response.data.id) {
+        navigate(`/teams/${response.data.id}`, { state: { successMessage: 'Team created successfully' } });
+      } else {
+        setSuccess('Team created successfully');
+        await loadCompetition();
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to create team');
+      setShowCreateTeamDialog(false);
     }
   };
 
@@ -106,7 +202,7 @@ const CompetitionDetails: React.FC = () => {
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error">{error}</Alert>
         <Box sx={{ mt: 2 }}>
-          <Link to="/headteacher/competitions" style={{ textDecoration: 'none' }}>
+          <Link to={isHeadteacher ? "/headteacher/competitions" : "/competitions"} style={{ textDecoration: 'none' }}>
             <MuiButton variant="outlined">Back to Competitions</MuiButton>
           </Link>
         </Box>
@@ -117,15 +213,26 @@ const CompetitionDetails: React.FC = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Link to="/headteacher/competitions" style={{ textDecoration: 'none' }}>
+        <Link to={isHeadteacher ? "/headteacher/competitions" : "/competitions"} style={{ textDecoration: 'none' }}>
           <MuiButton startIcon={<ArrowBackIcon />} variant="outlined">
             Back to Competitions
           </MuiButton>
         </Link>
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button onClick={() => setShowEditDialog(true)}>
-            Edit
-          </Button>
+          {isHeadteacher && (
+            <>
+              <Button onClick={() => setShowEditDialog(true)}>
+                Edit
+              </Button>
+              <MuiButton 
+                variant="outlined"
+                color="error"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                Delete
+              </MuiButton>
+            </>
+          )}
           <MuiButton 
             data-testid="logout" 
             startIcon={<LogoutIcon />}
@@ -186,6 +293,45 @@ const CompetitionDetails: React.FC = () => {
         </Grid>
       </Paper>
 
+      {!isHeadteacher && (
+        <>
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+            <Button size="large" onClick={handleOpenCreateTeamDialog}>Create Team</Button>
+          </Box>
+
+          <Paper sx={{ p: 3, mt: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Teams
+              <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 2 }} data-testid="teams-remaining">
+                ({competition?.teams?.length || 0}/{competition?.max_teams} teams)
+              </Typography>
+            </Typography>
+            {competition?.teams && competition.teams.length > 0 ? (
+              <Grid container spacing={2}>
+                {competition.teams.map((team) => (
+                  <Grid item xs={12} sm={6} md={4} key={team.id}>
+                    <Card>
+                      <CardContent>
+                        <Link to={`/teams/${team.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                          <Typography variant="h6" sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}>
+                            {team.name}
+                          </Typography>
+                        </Link>
+                        <Typography variant="body2" color="text.secondary" data-testid="member-count">
+                          Members: {team.members?.length || 0}/{competition.max_members_per_team}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <Typography color="text.secondary">No teams yet</Typography>
+            )}
+          </Paper>
+        </>
+      )}
+
       <Dialog open={showEditDialog} onClose={() => setShowEditDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Competition</DialogTitle>
         <DialogContent>
@@ -243,6 +389,41 @@ const CompetitionDetails: React.FC = () => {
         <DialogActions>
           <MuiButton onClick={() => setShowEditDialog(false)}>Cancel</MuiButton>
           <Button type="submit" form="edit-competition-form">Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
+        <DialogTitle>Confirm Delete</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this competition? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setShowDeleteDialog(false)}>Cancel</MuiButton>
+          <MuiButton color="error" onClick={handleDelete}>
+            Confirm
+          </MuiButton>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showCreateTeamDialog} onClose={() => setShowCreateTeamDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Create Team</DialogTitle>
+        <DialogContent>
+          <Box component="form" onSubmit={handleCreateTeam} id="create-team-form" sx={{ pt: 1 }}>
+            <Input
+              name="name"
+              label="Team Name"
+              type="text"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+              required
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <MuiButton onClick={() => setShowCreateTeamDialog(false)}>Cancel</MuiButton>
+          <Button type="submit" form="create-team-form">Create</Button>
         </DialogActions>
       </Dialog>
     </Container>

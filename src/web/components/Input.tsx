@@ -9,6 +9,7 @@ interface InputProps {
   onChangeText?: (text: string) => void;
   placeholder?: string;
   required?: boolean;
+  disabled?: boolean;
   min?: string | number;
   max?: string | number;
   id?: string;
@@ -17,22 +18,24 @@ interface InputProps {
   style?: any;
 }
 
-const Input: React.FC<InputProps> = ({ 
-  label, 
-  type = 'text', 
-  value, 
-  onChange, 
+const Input: React.FC<InputProps> = ({
+  label,
+  type = 'text',
+  value,
+  onChange,
   placeholder,
   required = false,
+  disabled = false,
   min,
   max,
   id,
   name,
   className,
-  ...props 
+  ...props
 }) => {
   return (
     <TextField
+      disabled={disabled}
       id={id}
       name={name}
       label={label}

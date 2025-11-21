@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, UploadFile, File as FastAPIFile
 from typing import List
-from src.services import team_service
-from src.models import Team, PydanticObjectId
+from services import team_service
+from models import Team, PydanticObjectId, ChatMessage, File
 from pydantic import BaseModel
 from typing import Optional, Dict
+import os
+import uuid
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -19,6 +22,7 @@ class TeamUpdateRequest(BaseModel):
     members: Optional[List[Dict[str, PydanticObjectId | str]]] = (
         None  # List of {"user_id": ObjectId, "name": str}
     )
+    url: Optional[str] = None
 
 
 @router.post("/", response_model=Team)
@@ -80,3 +84,104 @@ def remove_member_from_team(team_id: PydanticObjectId, user_id: PydanticObjectId
         return updated_team
     raise HTTPException(status_code=404, detail="Team not found")
 
+
+class ChatMessageRequest(BaseModel):
+    user_id: PydanticObjectId
+    user_name: str
+    message: str
+
+
+@router.post("/{team_id}/chat", response_model=Team)
+def add_chat_message(
+    team_id: PydanticObjectId,
+    message_data: ChatMessageRequest = Body(...)
+):
+    """Add a chat message to a team"""
+    team = team_service.get_team(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    new_message = ChatMessage(
+        user_id=message_data.user_id,
+        user_name=message_data.user_name,
+        message=message_data.message,
+        created_at=datetime.now(timezone.utc)
+    )
+    
+    updated_team = team_service.add_chat_message(team_id, new_message)
+    if updated_team:
+        return updated_team
+    raise HTTPException(status_code=404, detail="Team not found")
+
+
+@router.get("/{team_id}/chat", response_model=List[ChatMessage])
+def get_chat_messages(team_id: PydanticObjectId):
+    """Get all chat messages for a team"""
+    team = team_service.get_team(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team.chat
+
+
+@router.post("/{team_id}/files")
+async def upload_file(
+    team_id: PydanticObjectId,
+    file: UploadFile = FastAPIFile(...),
+    user_id: str = Body(...),
+    user_name: str = Body(...)
+):
+    """Upload a file to a team"""
+    team = team_service.get_team(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Create uploads directory if it doesn't exist
+    upload_dir = os.path.join(os.getcwd(), "uploads", str(team_id))
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(upload_dir, unique_filename)
+    
+    # Save file
+    contents = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
+    # Create file record
+    file_url = f"/api/teams/{team_id}/files/{unique_filename}"
+    new_file = File(
+        user_id=PydanticObjectId(user_id),
+        user_name=user_name,
+        filename=file.filename,
+        url=file_url,
+        size=len(contents),
+        created_at=datetime.now(timezone.utc)
+    )
+    
+    updated_team = team_service.add_file(team_id, new_file)
+    if updated_team:
+        return {"message": "File uploaded successfully", "file": new_file}
+    raise HTTPException(status_code=404, detail="Team not found")
+
+
+@router.get("/{team_id}/files", response_model=List[File])
+def get_files(team_id: PydanticObjectId):
+    """Get all files for a team"""
+    team = team_service.get_team(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team.files
+
+
+@router.get("/{team_id}/files/{filename}")
+async def download_file(team_id: PydanticObjectId, filename: str):
+    """Download a file from a team"""
+    from fastapi.responses import FileResponse
+    
+    file_path = os.path.join(os.getcwd(), "uploads", str(team_id), filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    return FileResponse(file_path)

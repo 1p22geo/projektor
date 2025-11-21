@@ -41,7 +41,7 @@ const HeadteacherDashboard: React.FC = () => {
   };
 
   const downloadTokens = () => {
-    const csv = 'Token\n' + generatedTokens.join('\n');
+    const csv = 'Token\n' + tokens.join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

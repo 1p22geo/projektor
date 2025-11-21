@@ -1,5 +1,5 @@
-from src.database import db
-from src.models import Team, PydanticObjectId
+from database import db
+from models import Team, PydanticObjectId, ChatMessage, File
 from typing import List, Optional
 from datetime import datetime, timezone
 
@@ -66,4 +66,28 @@ def remove_member_from_team(team_id: PydanticObjectId, user_id: PydanticObjectId
     if not _teams_collection.find_one({"_id": team_id}):
         return None
     _teams_collection.update_one({"_id": team_id}, {"$pull": {"members": {"user_id": user_id}}})
+    return get_team(team_id)
+
+
+def add_chat_message(team_id: PydanticObjectId, message: ChatMessage) -> Optional[Team]:
+    """Add a chat message to a team"""
+    if not _teams_collection.find_one({"_id": team_id}):
+        return None
+    message_dict = message.model_dump(by_alias=True)
+    _teams_collection.update_one(
+        {"_id": team_id},
+        {"$push": {"chat": message_dict}}
+    )
+    return get_team(team_id)
+
+
+def add_file(team_id: PydanticObjectId, file: File) -> Optional[Team]:
+    """Add a file to a team"""
+    if not _teams_collection.find_one({"_id": team_id}):
+        return None
+    file_dict = file.model_dump(by_alias=True)
+    _teams_collection.update_one(
+        {"_id": team_id},
+        {"$push": {"files": file_dict}}
+    )
     return get_team(team_id)

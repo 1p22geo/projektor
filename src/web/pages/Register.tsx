@@ -47,8 +47,8 @@ const Register: React.FC = () => {
         password
       });
       
-      const { token: authToken, user } = loginResponse.data;
-      localStorage.setItem('authToken', authToken);
+      const { access_token, user } = loginResponse.data;
+      localStorage.setItem('authToken', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       
       navigate('/competitions');

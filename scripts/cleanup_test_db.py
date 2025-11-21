@@ -29,6 +29,7 @@ def cleanup_test_database():
     
     print(f"🧹 Cleaning up test database: {test_db_name}")
     
+    client = None
     try:
         client = MongoClient(mongo_uri)
         db = client[test_db_name]
@@ -51,7 +52,8 @@ def cleanup_test_database():
         print(f"❌ Error cleaning up database: {e}", file=sys.stderr)
         sys.exit(1)
     finally:
-        client.close()
+        if client:
+            client.close()
 
 if __name__ == "__main__":
     cleanup_test_database()

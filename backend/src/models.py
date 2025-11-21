@@ -130,6 +130,7 @@ class Team(BaseModel):
     ] = []  # List of {"user_id": ObjectId, "name": str}
     chat: List[ChatMessage] = []
     files: List[File] = []
+    url: Optional[str] = None  # Team URL (e.g., link to GitHub repo)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 

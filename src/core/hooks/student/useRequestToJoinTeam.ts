@@ -5,17 +5,17 @@ export const useRequestToJoinTeam = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const requestToJoin = async (teamId: string): Promise<boolean> => {
+  const requestToJoin = async (teamId: string): Promise<{ success: boolean; requestId?: string }> => {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.post(`/teams/${teamId}/join-requests`);
+      const response = await apiClient.post(`/student/teams/${teamId}/join-requests`);
       setLoading(false);
-      return true;
+      return { success: true, requestId: response.data?.id };
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to send join request');
       setLoading(false);
-      return false;
+      return { success: false };
     }
   };
 

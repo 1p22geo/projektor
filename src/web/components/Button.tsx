@@ -13,20 +13,20 @@ interface ButtonProps {
   form?: string;
 }
 
-const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  onClick, 
+const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  onClick,
   onPress,
   type = 'button',
   disabled = false,
   className,
   style,
   form,
-  ...props 
+  ...props
 }) => {
-  const muiVariant = variant === 'primary' ? 'contained' : 
-                     variant === 'secondary' ? 'outlined' : 'contained';
+  const muiVariant = variant === 'primary' ? 'contained' :
+    variant === 'secondary' ? 'outlined' : 'contained';
   const color = variant === 'danger' ? 'error' : 'primary';
 
   return (

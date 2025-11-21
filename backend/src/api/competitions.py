@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, HTTPException
 from typing import List, Optional
-from src.services import competition_service
-from src.models import Competition, PydanticObjectId
+from services import competition_service
+from models import Competition, PydanticObjectId
 from datetime import datetime, timezone
 from pydantic import BaseModel
 

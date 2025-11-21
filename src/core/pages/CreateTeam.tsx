@@ -18,9 +18,9 @@ const CreateTeam: React.FC = () => {
       // Handle error: competitionId is missing
       return;
     }
-    const success = await createTeam(competitionId, teamName); // Uncomment when T031 is done
-    if (success) {
-      navigate(`/competitions`); // Redirect to competition details or team page
+    const team = await createTeam(competitionId, teamName);
+    if (team) {
+      navigate(`/teams/${team.id}`);
     }
   };
 
@@ -36,7 +36,7 @@ const CreateTeam: React.FC = () => {
           </Typography>
           <Box component="form" onSubmit={handleSubmit}>
             <Input
-              name="teamName"
+              name="name"
               label="Team Name"
               type="text"
               placeholder="Enter team name"

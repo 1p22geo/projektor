@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Container, 
   Typography, 
@@ -50,10 +50,17 @@ const CompetitionManagement: React.FC = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     loadCompetitions();
-  }, []);
+    // Check if there's a success message from navigation state
+    if (location.state?.successMessage) {
+      setSuccess(location.state.successMessage);
+      // Clear the state so it doesn't show again on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state?.refresh]);
 
   const loadCompetitions = async () => {
     try {
@@ -179,14 +186,16 @@ const CompetitionManagement: React.FC = () => {
               required
             />
             <FormControl fullWidth margin="normal">
-              <InputLabel>Scope</InputLabel>
+              <InputLabel id="scope-label">Scope</InputLabel>
               <Select
+                labelId="scope-label"
                 name="scope"
                 value={formData.scope}
                 onChange={(e) => setFormData({ ...formData, scope: e.target.value })}
                 label="Scope"
+                data-testid="scope-select"
               >
-                <MenuItem value="school">School Only</MenuItem>
+                <MenuItem value="school">School only</MenuItem>
                 <MenuItem value="global">Global</MenuItem>
               </Select>
             </FormControl>

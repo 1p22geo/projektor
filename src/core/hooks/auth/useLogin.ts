@@ -1,11 +1,19 @@
 import { useState } from 'react';
 import apiClient from '@core/api/apiClient';
 
+interface LoginResult {
+  user: {
+    id: string;
+    role: string;
+    email: string;
+  };
+}
+
 const useLogin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<LoginResult | null> => {
     setLoading(true);
     setError(null);
     try {
@@ -14,11 +22,11 @@ const useLogin = () => {
       localStorage.setItem('authToken', access_token);
       localStorage.setItem('user', JSON.stringify(user));
       setLoading(false);
-      return true;
+      return { user };
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Login failed');
       setLoading(false);
-      return false;
+      return null;
     }
   };
 

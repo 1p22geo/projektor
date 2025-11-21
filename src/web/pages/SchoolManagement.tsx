@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Container, 
   Typography, 
@@ -37,6 +37,7 @@ interface School {
 
 const SchoolManagement: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [schools, setSchools] = useState<School[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newSchoolName, setNewSchoolName] = useState('');
@@ -47,12 +48,13 @@ const SchoolManagement: React.FC = () => {
 
   useEffect(() => {
     loadSchools();
-  }, []);
+  }, [location]);
 
   const loadSchools = async () => {
     try {
       const response = await apiClient.get('/admin/schools');
       setSchools(response.data);
+      setError('');  // Clear any previous errors
     } catch (err: any) {
       setError('Failed to load schools');
     }

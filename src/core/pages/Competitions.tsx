@@ -26,6 +26,10 @@ const Competitions: React.FC = () => {
     navigate(`/competitions/${competitionId}/create-team`);
   };
 
+  const handleViewCompetition = (competitionId: string) => {
+    navigate(`/competitions/${competitionId}`);
+  };
+
   return (
     <Layout title="Competitions">
       <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -54,7 +58,7 @@ const Competitions: React.FC = () => {
         <Grid container spacing={3} sx={{ mt: 4 }}>
           {competitions.map((competition) => (
             <Grid item xs={12} md={6} key={competition.id}>
-              <Card>
+              <Card sx={{ cursor: 'pointer' }} onClick={() => handleViewCompetition(competition.id)}>
                 <CardContent>
                   <Typography variant="h5" component="h2" gutterBottom>
                     {competition.name}
@@ -68,7 +72,15 @@ const Competitions: React.FC = () => {
                   </Box>
                 </CardContent>
                 <CardActions>
-                  <Button size="small" onClick={() => handleCreateTeam(competition.id)}>Create Team</Button>
+                  <Button 
+                    size="small" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCreateTeam(competition.id);
+                    }}
+                  >
+                    Create Team
+                  </Button>
                 </CardActions>
               </Card>
             </Grid>

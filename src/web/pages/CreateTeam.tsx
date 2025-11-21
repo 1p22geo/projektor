@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { Container, Typography, Paper, Box, Alert, Button as MuiButton } from '@mui/material';
 import { ArrowBack as ArrowBackIcon } from '@mui/icons-material';
@@ -10,8 +10,41 @@ const CreateTeam: React.FC = () => {
   const { competitionId } = useParams<{ competitionId: string }>();
   const [teamName, setTeamName] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingEligibility, setCheckingEligibility] = useState(true);
   const navigate = useNavigate();
+
+  // Check if user is already in a team for this competition
+  useEffect(() => {
+    const checkEligibility = async () => {
+      if (!competitionId) return;
+      
+      try {
+        const response = await apiClient.get(`/student/competitions/${competitionId}`);
+        const competition = response.data;
+        const userStr = localStorage.getItem('user');
+        const user = userStr ? JSON.parse(userStr) : null;
+        
+        // Check if user is already in a team for this competition
+        if (competition.teams && user) {
+          const userInTeam = competition.teams.some((team: any) =>
+            team.members?.some((member: any) => member.user_id === user.id || member.email === user.email)
+          );
+          
+          if (userInTeam) {
+            setError('Already in a team for this competition');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check eligibility:', err);
+      } finally {
+        setCheckingEligibility(false);
+      }
+    };
+    
+    checkEligibility();
+  }, [competitionId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,13 +57,13 @@ const CreateTeam: React.FC = () => {
     setError('');
 
     try {
-      const response = await apiClient.post(`/competitions/${competitionId}/teams`, {
+      const response = await apiClient.post(`/student/competitions/${competitionId}/teams`, {
         name: teamName,
         competition_id: competitionId
       });
       
-      // Navigate to the newly created team
-      navigate(`/teams/${response.data.id}`);
+      // Navigate with success message
+      navigate(`/teams/${response.data.id}`, { state: { successMessage: 'Team created successfully' } });
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create team');
     } finally {
@@ -54,8 +87,14 @@ const CreateTeam: React.FC = () => {
         </Typography>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
+          <Alert severity="error" sx={{ mb: 2 }} role="alert" onClose={() => setError('')}>
             {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 2 }} role="alert">
+            {success}
           </Alert>
         )}
 

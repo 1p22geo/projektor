@@ -5,6 +5,8 @@ import Register from '@platform/pages/Register';
 import Competitions from '@platform/pages/Competitions';
 import CreateTeam from '@platform/pages/CreateTeam';
 import Team from '@platform/pages/Team';
+import Teams from './pages/Teams';
+import MyTeams from './pages/MyTeams';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import SchoolManagement from './pages/SchoolManagement';
@@ -14,6 +16,8 @@ import HeadteacherDashboard from './pages/HeadteacherDashboard';
 import CompetitionManagement from './pages/CompetitionManagement';
 import CompetitionDetails from './pages/CompetitionDetails';
 import Moderation from './pages/Moderation';
+import TeamModeration from './pages/TeamModeration';
+import AccountSettings from './pages/AccountSettings';
 import PrivacyPolicy from '@core/pages/PrivacyPolicy';
 
 // Dashboard router component
@@ -71,11 +75,17 @@ const App: React.FC = () => {
         <Route path="/headteacher/competitions" element={<CompetitionManagement />} />
         <Route path="/headteacher/competitions/:competitionId" element={<CompetitionDetails />} />
         <Route path="/headteacher/moderation" element={<Moderation />} />
+        <Route path="/moderation" element={<Moderation />} />
+        <Route path="/moderation/team/:teamId" element={<TeamModeration />} />
         
         {/* Student routes */}
         <Route path="/competitions" element={<Competitions />} />
+        <Route path="/competitions/:competitionId" element={<CompetitionDetails />} />
         <Route path="/competitions/:competitionId/create-team" element={<CreateTeam />} />
+        <Route path="/teams" element={<Teams />} />
         <Route path="/teams/:teamId" element={<Team />} />
+        <Route path="/my-teams" element={<MyTeams />} />
+        <Route path="/account-settings" element={<AccountSettings />} />
       </Routes>
     </Router>
   );

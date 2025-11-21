@@ -11,7 +11,8 @@ export const useHandleJoinRequest = (teamId: string) => {
     setLoading(true);
     setError(null);
     try {
-      await apiClient.put(`/teams/${teamId}/join-requests/${requestId}`, { status });
+      const action = status === 'APPROVED' ? 'approve' : 'reject';
+      await apiClient.put(`/student/teams/${teamId}/join-requests/${requestId}`, { action });
       mutate(); // Revalidate the join requests list
       setLoading(false);
       return true;

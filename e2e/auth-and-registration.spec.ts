@@ -7,6 +7,7 @@ import {
   generateTokens,
   registerStudent,
   loginAsStudent,
+  logoutStudent,
 } from './helpers';
 
 test.describe('User Story 3: School Token Generation', () => {
@@ -163,7 +164,7 @@ test.describe('User Story 4: Student Registration', () => {
     
     // First registration
     await registerStudent(page, registrationToken, studentName1, studentEmail1, studentPassword);
-    await page.click('[data-testid="logout"]');
+    await logoutStudent(page);
     
     // Try to register again with same token
     const studentName2 = generateId('student');
@@ -251,7 +252,7 @@ test.describe('User Story 5: Student Login', () => {
     
     await registerStudent(page, tokens[0], studentName, studentEmail, studentPassword);
     // Logout after auto-login from registration
-    await page.click('[data-testid="logout"]');
+    await logoutStudent(page);
   });
 
   test('Student can log in and see competitions', async ({ page }) => {
@@ -267,10 +268,8 @@ test.describe('User Story 5: Student Login', () => {
       expect(url).not.toContain('/login');
     }).toPass({ timeout: 10000 });
     
-    // Should have competitions or teams section
-    const hasCompetitions = await page.locator('text=Competitions').isVisible().catch(() => false);
-    const hasTeams = await page.locator('text=Teams').isVisible().catch(() => false);
-    expect(hasCompetitions || hasTeams).toBe(true);
+    // Should have competitions or teams section - wait for it to be visible
+    await expect(page.locator('h3, h4, h5').filter({ hasText: 'Competitions' }).or(page.getByRole('heading', { name: /competitions/i }))).toBeVisible({ timeout: 5000 });
   });
 
   test('Student cannot log in with wrong password', async ({ page }) => {
@@ -291,7 +290,7 @@ test.describe('User Story 5: Student Login', () => {
     await loginAsStudent(page, studentEmail, studentPassword);
     
     // Logout
-    await page.click('[data-testid="logout"]');
+    await logoutStudent(page);
     
     // Should redirect to login
     await page.waitForURL('/login');

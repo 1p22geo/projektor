@@ -61,10 +61,11 @@ const SchoolDetails: React.FC = () => {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await apiClient.put(`/admin/schools/${schoolId}`, { name: editedName });
+      const response = await apiClient.put(`/admin/schools/${schoolId}`, { name: editedName });
+      // Update local state with the response instead of reloading
+      setSchool(response.data);
       setSuccess('School updated successfully');
       setShowEditDialog(false);
-      await loadSchool();
     } catch (err: any) {
       setError('Failed to update school');
     }
@@ -104,7 +105,7 @@ const SchoolDetails: React.FC = () => {
       <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Link to="/admin/schools" style={{ textDecoration: 'none' }}>
           <MuiButton startIcon={<ArrowBackIcon />} variant="outlined">
-            Back to Schools
+            Schools
           </MuiButton>
         </Link>
         <Box sx={{ display: 'flex', gap: 2 }}>
@@ -123,7 +124,7 @@ const SchoolDetails: React.FC = () => {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 2 }} role="alert" onClose={() => setSuccess('')}>{success}</Alert>}
+      {success && <Alert severity="success" sx={{ mb: 2 }} role="alert" data-testid="success-alert" onClose={() => setSuccess('')}>{success}</Alert>}
       
       <Typography variant="h4" component="h2" gutterBottom>
         {school?.name}

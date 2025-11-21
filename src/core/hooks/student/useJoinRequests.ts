@@ -13,7 +13,7 @@ interface JoinRequest {
 }
 
 export const useJoinRequests = (teamId: string) => {
-  const { data, error, isLoading, mutate } = useSWR<JoinRequest[]>(teamId ? `/teams/${teamId}/join-requests` : null, fetcher);
+  const { data, error, isLoading, mutate } = useSWR<JoinRequest[]>(teamId ? `/student/teams/${teamId}/join-requests` : null, fetcher);
 
   return {
     joinRequests: data,

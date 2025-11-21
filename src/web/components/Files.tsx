@@ -27,10 +27,8 @@ interface FileItem {
   filename: string;
   size: number;
   url: string;
-  user: {
-    user_id: string;
-    name: string;
-  };
+  user_id: string;
+  user_name: string;
   created_at: string;
 }
 
@@ -48,7 +46,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
 
   const loadFiles = async () => {
     try {
-      const response = await apiClient.get(`/teams/${teamId}/files`);
+      const response = await apiClient.get(`/student/teams/${teamId}/files`);
       const fileList = response.data.files || [];
       setFiles(fileList);
       const total = fileList.reduce((sum: number, file: FileItem) => sum + file.size, 0);
@@ -78,7 +76,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      await apiClient.post(`/teams/${teamId}/files`, formData, {
+      await apiClient.post(`/student/teams/${teamId}/files`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -209,7 +207,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
                       </Typography>
                       {' • '}
                       <Typography component="span" variant="caption" data-testid="file-uploader">
-                        {file.user.name}
+                        {file.user_name}
                       </Typography>
                       {' • '}
                       <Typography component="span" variant="caption" data-testid="file-date">
