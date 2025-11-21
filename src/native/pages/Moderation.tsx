@@ -16,6 +16,7 @@ interface Team {
     name: string;
     email: string;
   }>;
+  url?: string;
 }
 
 const Moderation: React.FC = () => {
@@ -85,6 +86,7 @@ const Moderation: React.FC = () => {
             <Card.Content>
               <Title>{team.name}</Title>
               <Paragraph>Competition: {team.competition.name}</Paragraph>
+              {team.url && <Paragraph>URL: {team.url}</Paragraph>}
               <Paragraph style={styles.membersTitle}>Members ({team.members.length}):</Paragraph>
               {team.members.map((member) => (
                 <List.Item
