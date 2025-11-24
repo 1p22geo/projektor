@@ -1,4 +1,6 @@
 import { FullConfig } from '@playwright/test';
+import { execSync } from 'child_process';
+import path from 'path';
 
 /**
  * Global teardown for Playwright tests
@@ -7,11 +9,21 @@ import { FullConfig } from '@playwright/test';
 async function globalTeardown(config: FullConfig) {
   console.log('🧹 Starting global teardown...');
   
-  // Clean up test data
-  // For example:
-  // 1. Clear test database
-  // 2. Remove uploaded test files
-  // 3. Clean up any test artifacts
+  // Clean up test database after running tests
+  console.log('🧹 Cleaning up test database...');
+  try {
+    const scriptPath = path.join(__dirname, '..', 'scripts', 'cleanup_test_db.py');
+    const backendDir = path.join(__dirname, '..', 'backend');
+    
+    // Run the cleanup script using the backend's virtual environment
+    execSync(`cd ${backendDir} && uv run python ${scriptPath}`, { 
+      stdio: 'inherit',
+      env: { ...process.env }
+    });
+  } catch (error) {
+    console.error('❌ Failed to clean up test database:', error);
+    // Don't throw - we want teardown to continue even if cleanup fails
+  }
   
   console.log('✅ Global teardown complete');
 }

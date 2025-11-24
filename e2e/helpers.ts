@@ -248,15 +248,11 @@ export async function logoutStudent(page: Page) {
 
 /**
  * Helper function to clean up MongoDB database
+ * Note: Database cleanup is handled by global-setup.ts and global-teardown.ts
+ * which call scripts/cleanup_test_db.py directly.
+ * This function is kept for backwards compatibility but does nothing.
  */
 export async function cleanupDatabase() {
-  // This would connect to MongoDB and clear test data
-  // Implementation depends on your MongoDB setup
-  // For now, we'll assume the backend has a test cleanup endpoint
-  const response = await fetch('http://localhost:8000/api/test/cleanup', {
-    method: 'POST',
-  });
-  if (!response.ok) {
-    console.warn('Failed to cleanup database');
-  }
+  // Database cleanup is now handled by Playwright's global setup/teardown
+  // No API endpoint needed - the Python script handles it directly
 }

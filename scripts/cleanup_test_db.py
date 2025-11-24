@@ -27,6 +27,12 @@ def cleanup_test_database():
     # Use a separate test database
     test_db_name = os.getenv("MONGO_TEST_DATABASE", "projektor_test")
     
+    # Safety check: Only allow cleaning test databases
+    if not ("test" in test_db_name.lower() or test_db_name.endswith("_test")):
+        print(f"❌ Error: Refusing to clean non-test database: {test_db_name}", file=sys.stderr)
+        print("   Database name must contain 'test' or end with '_test'", file=sys.stderr)
+        sys.exit(1)
+    
     print(f"🧹 Cleaning up test database: {test_db_name}")
     
     client = None

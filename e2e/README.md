@@ -193,7 +193,25 @@ Test data is isolated using:
 
 - Unique timestamps and random IDs
 - Separate test database (configured in `.env.local`)
-- Automatic cleanup between tests
+- Automatic cleanup via global setup/teardown
+
+### Database Cleanup
+
+Database cleanup is handled automatically by Playwright's global setup and teardown hooks:
+
+1. **Before tests** (`global-setup.ts`): Runs `scripts/cleanup_test_db.py` to ensure a clean test database
+2. **After tests** (`global-teardown.ts`): Runs `scripts/cleanup_test_db.py` to clean up test data
+
+The cleanup script:
+- Only works on databases with "test" in the name (safety check)
+- Drops all collections in the test database
+- Uses the backend's Python environment and MongoDB connection
+- No API endpoints needed - direct database access
+
+**Important**: 
+- The backend automatically uses the test database when `TEST_MODE=true` is set
+- Set `MONGO_TEST_DATABASE` in `.env.local` to specify the test database name (default: `projektor_test`)
+- The cleanup is automatic - no manual intervention needed
 
 ## Debugging
 
