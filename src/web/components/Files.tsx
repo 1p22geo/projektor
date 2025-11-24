@@ -23,7 +23,8 @@ interface FilesProps {
 }
 
 interface FileItem {
-  _id: string;
+  id?: string;
+  _id?: string;
   filename: string;
   size: number;
   url: string;
@@ -47,7 +48,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
   const loadFiles = async () => {
     try {
       const response = await apiClient.get(`/student/teams/${teamId}/files`);
-      const fileList = response.data.files || [];
+      const fileList = Array.isArray(response.data) ? response.data : (response.data.files || []);
       setFiles(fileList);
       const total = fileList.reduce((sum: number, file: FileItem) => sum + file.size, 0);
       setTotalSize(total);
@@ -111,10 +112,15 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
   };
 
   const handleDelete = async (fileId: string) => {
-    // For now, deletion is not implemented in backend
-    // This would require a DELETE endpoint
-    setDeleteConfirm(null);
-    setError('File deletion not yet implemented');
+    try {
+      await apiClient.delete(`/student/teams/${teamId}/files/${fileId}`);
+      setSuccess('File deleted successfully');
+      await loadFiles();
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to delete file');
+    } finally {
+      setDeleteConfirm(null);
+    }
   };
 
   const formatSize = (bytes: number) => {
@@ -178,7 +184,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
           <List>
             {files.map((file) => (
               <ListItem
-                key={file._id}
+                key={file.id || file._id}
                 secondaryAction={
                   <Box>
                     <IconButton 
@@ -190,7 +196,7 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
                     </IconButton>
                     <IconButton 
                       edge="end" 
-                      onClick={() => setDeleteConfirm(file._id)}
+                      onClick={() => setDeleteConfirm(file.id || file._id || '')}
                       data-testid={`delete-${file.filename}`}
                     >
                       <DeleteIcon />

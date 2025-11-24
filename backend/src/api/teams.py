@@ -185,3 +185,35 @@ async def download_file(team_id: PydanticObjectId, filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     return FileResponse(file_path)
+
+
+@router.delete("/{team_id}/files/{file_id}")
+async def delete_file(team_id: PydanticObjectId, file_id: str):
+    """Delete a file from a team"""
+    team = team_service.get_team(team_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    
+    # Find the file to get its filename
+    file_to_delete = None
+    for file in team.files:
+        if file.id == file_id:
+            file_to_delete = file
+            break
+    
+    if not file_to_delete:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Extract filename from URL
+    filename = file_to_delete.url.split('/')[-1]
+    file_path = os.path.join(os.getcwd(), "uploads", str(team_id), filename)
+    
+    # Delete physical file
+    if os.path.exists(file_path):
+        os.remove(file_path)
+    
+    # Delete file record from database
+    updated_team = team_service.delete_file(team_id, file_id)
+    if updated_team:
+        return {"message": "File deleted successfully"}
+    raise HTTPException(status_code=404, detail="Failed to delete file")

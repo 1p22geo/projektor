@@ -368,14 +368,15 @@ test.describe('User Story 9: Team Collaboration - File Hosting', () => {
     // Wait for upload to complete
     await expect(page.locator('[role="alert"]:has-text("File uploaded successfully")')).toBeVisible({ timeout: 10000 });
 
-    // Delete file
+    // Delete file - click delete button then confirm in dialog
     await page.click('[data-testid="delete-delete-test.pdf"]');
     await page.click('button:has-text("Confirm")');
 
-    // Should show error (deletion not yet implemented)
-    await expect(page.locator('[role="alert"]:has-text("File deletion not yet implemented")')).toBeVisible({ timeout: 5000 });
+    // Wait for deletion success message
+    await expect(page.locator('[role="alert"]:has-text("File deleted successfully")')).toBeVisible({ timeout: 5000 });
 
-    // For now, accept that deletion is not implemented
+    // File should no longer be in the list
+    await expect(page.locator('[data-testid="file-list"]')).not.toContainText('delete-test.pdf');
   });
 
   test('Files persist across sessions', async ({ page }) => {

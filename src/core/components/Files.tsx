@@ -107,7 +107,20 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
   const storageMB = (totalStorage / (1024 * 1024)).toFixed(2);
 
   const handleFileDelete = async (fileId: string, filename: string) => {
-    setUploadError('File deletion not yet implemented');
+    if (!window.confirm(`Are you sure you want to delete ${filename}?`)) {
+      return;
+    }
+    
+    setUploadError(null);
+    setUploadSuccess(null);
+    
+    try {
+      await apiClient.delete(`/student/teams/${teamId}/files/${fileId}`);
+      setUploadSuccess('File deleted successfully');
+      mutate(); // Revalidate the file list
+    } catch (err: any) {
+      setUploadError(err.response?.data?.detail || 'Failed to delete file.');
+    }
   };
 
   return (

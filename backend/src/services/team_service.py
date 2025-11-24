@@ -91,3 +91,14 @@ def add_file(team_id: PydanticObjectId, file: File) -> Optional[Team]:
         {"$push": {"files": file_dict}}
     )
     return get_team(team_id)
+
+
+def delete_file(team_id: PydanticObjectId, file_id: str) -> Optional[Team]:
+    """Delete a file from a team"""
+    if not _teams_collection.find_one({"_id": team_id}):
+        return None
+    _teams_collection.update_one(
+        {"_id": team_id},
+        {"$pull": {"files": {"id": file_id}}}
+    )
+    return get_team(team_id)

@@ -25,24 +25,46 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
 
   const { data: files, error: fetchError, isLoading: filesLoading, mutate } = useSWR<FileData[]>(
-    teamId ? `/teams/${teamId}/files` : null, 
+    teamId ? `/student/teams/${teamId}/files` : null, 
     (url) => apiClient.get(url).then(res => res.data),
     { refreshInterval: 3000 } // Poll every 3 seconds
   );
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files.length > 0) {
-      setSelectedFile(event.target.files[0]);
+      const file = event.target.files[0];
+      setSelectedFile(file);
       setUploadError(null);
       setUploadSuccess(null);
+      
+      // Auto-upload the file
+      await uploadFile(file);
+      
+      // Reset input
+      event.target.value = '';
     } else {
       setSelectedFile(null);
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!selectedFile || !teamId) {
+  const uploadFile = async (file: File) => {
+    if (!file || !teamId) {
       setUploadError('Please select a file to upload.');
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg', '.gif', '.zip'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!allowedTypes.includes(fileExtension)) {
+      setUploadError('File type not supported');
+      return;
+    }
+
+    // Check file size (100MB limit)
+    const MAX_SIZE = 100 * 1024 * 1024; // 100MB
+    if (file.size > MAX_SIZE) {
+      setUploadError('File exceeds 100MB limit');
       return;
     }
 
@@ -51,19 +73,15 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
     setUploadSuccess(null);
 
     const formData = new FormData();
-    formData.append('file', selectedFile);
-    
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    formData.append('user_id', user.id || '');
-    formData.append('user_name', user.email || user.name || 'Anonymous');
+    formData.append('file', file);
 
     try {
-      await apiClient.post(`/teams/${teamId}/files`, formData, {
+      await apiClient.post(`/student/teams/${teamId}/files`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-      setUploadSuccess('File uploaded successfully!');
+      setUploadSuccess('File uploaded successfully');
       setSelectedFile(null);
       mutate(); // Revalidate the file list
     } catch (err: any) {
@@ -73,37 +91,56 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
     }
   };
 
+  const handleFileUpload = async () => {
+    if (selectedFile) {
+      await uploadFile(selectedFile);
+    }
+  };
+
   const handleFileDownload = (url: string, filename: string) => {
     // Download using the file URL from backend
     const fullUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}${url}`;
     window.open(fullUrl, '_blank');
   };
 
+  const totalStorage = files?.reduce((total, file) => total + file.size, 0) || 0;
+  const storageMB = (totalStorage / (1024 * 1024)).toFixed(2);
+
+  const handleFileDelete = async (fileId: string, filename: string) => {
+    if (!window.confirm(`Are you sure you want to delete ${filename}?`)) {
+      return;
+    }
+    
+    setUploadError(null);
+    setUploadSuccess(null);
+    
+    try {
+      await apiClient.delete(`/student/teams/${teamId}/files/${fileId}`);
+      setUploadSuccess('File deleted successfully');
+      mutate(); // Revalidate the file list
+    } catch (err: any) {
+      setUploadError(err.response?.data?.detail || 'Failed to delete file.');
+    }
+  };
+
   return (
-    <Box sx={{ mt: 4 }}>
+    <Box sx={{ mt: 4 }} role="tabpanel">
       <Typography variant="h6" gutterBottom>
         Team Files
       </Typography>
+      
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" color="text.secondary" data-testid="storage-usage">
+          Storage used: {storageMB} MB / 100 MB
+        </Typography>
+      </Box>
+
       <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
         <input
           type="file"
           onChange={handleFileChange}
-          style={{ display: 'none' }}
-          id="file-upload-button"
+          id="file-upload-input"
         />
-        <label htmlFor="file-upload-button">
-          <Button variant="outlined" component="span" startIcon={<CloudUploadIcon />}>
-            {selectedFile ? selectedFile.name : 'Choose File'}
-          </Button>
-        </label>
-        <Button
-          variant="contained"
-          onClick={handleFileUpload}
-          disabled={!selectedFile || uploading}
-          startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : null}
-        >
-          {uploading ? 'Uploading...' : 'Upload'}
-        </Button>
       </Box>
       {uploadError && <Alert severity="error" role="alert" sx={{ mb: 2 }}>{uploadError}</Alert>}
       {uploadSuccess && <Alert severity="success" role="alert" sx={{ mb: 2 }}>{uploadSuccess}</Alert>}
@@ -118,29 +155,57 @@ const Files: React.FC<FilesProps> = ({ teamId }) => {
           Failed to load files: {fetchError.message}
         </Alert>
       )}
-      {!filesLoading && !fetchError && files && files.length === 0 && (
-        <Typography variant="body2" color="text.secondary">No files uploaded yet.</Typography>
-      )}
-      {files && files.length > 0 && (
-        <List data-testid="file-list">
-          {files.map((file) => (
-            <ListItem 
-              key={file.id} 
-              secondaryAction={
-                <IconButton edge="end" aria-label="download" onClick={() => handleFileDownload(file.url, file.filename)}>
+      <List data-testid="file-list">
+        {!filesLoading && !fetchError && files && files.length === 0 && (
+          <Typography variant="body2" color="text.secondary">No files uploaded yet.</Typography>
+        )}
+        {files && files.length > 0 && files.map((file) => (
+          <ListItem 
+            key={file.id} 
+            secondaryAction={
+              <Box>
+                <IconButton 
+                  edge="end" 
+                  aria-label="download" 
+                  onClick={() => handleFileDownload(file.url, file.filename)}
+                  data-testid={`download-${file.filename}`}
+                >
                   <GetAppIcon />
                 </IconButton>
+                <IconButton 
+                  edge="end" 
+                  aria-label="delete" 
+                  onClick={() => handleFileDelete(file.id, file.filename)}
+                  data-testid={`delete-${file.filename}`}
+                >
+                  ×
+                </IconButton>
+              </Box>
+            }
+          >
+            <ListItemText 
+              primary={
+                <Typography data-testid="file-name">{file.filename}</Typography>
               }
-            >
-              <ListItemText 
-                data-testid="file-name"
-                primary={file.filename} 
-                secondary={`${(file.size / 1024).toFixed(2)} KB - ${new Date(file.created_at).toLocaleDateString()}`} 
-              />
-            </ListItem>
-          ))}
-        </List>
-      )}
+              secondary={
+                <Box>
+                  <Typography variant="caption" data-testid="file-size">
+                    {(file.size / 1024).toFixed(2)} KB
+                  </Typography>
+                  {' • '}
+                  <Typography variant="caption" data-testid="file-uploader">
+                    {file.user_name}
+                  </Typography>
+                  {' • '}
+                  <Typography variant="caption" data-testid="file-date">
+                    {new Date(file.created_at).toLocaleDateString()}
+                  </Typography>
+                </Box>
+              }
+            />
+          </ListItem>
+        ))}
+      </List>
     </Box>
   );
 };
